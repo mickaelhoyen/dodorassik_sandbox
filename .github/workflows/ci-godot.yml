@@ -1,0 +1,103 @@
+name: CI — Godot
+
+on:
+  push:
+    branches: [main, "claude/**", "feat/**", "fix/**"]
+    paths: ["godot/**"]
+  pull_request:
+    paths: ["godot/**"]
+
+env:
+  GODOT_VERSION: "4.6"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  validate-project:
+    name: Validate Godot project (import + script check)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot headless
+        run: |
+          GODOT_FILENAME="Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/${GODOT_FILENAME}.zip" \
+            -o godot.zip
+          unzip -q godot.zip
+          chmod +x "${GODOT_FILENAME}"
+          echo "GODOT_BIN=$(pwd)/${GODOT_FILENAME}" >> $GITHUB_ENV
+
+      - name: Import project (validates all scripts parse correctly)
+        run: |
+          # --headless --import forces a full project import and exits.
+          # Any GDScript parse error or missing resource causes a non-zero exit.
+          "$GODOT_BIN" --headless --import 2>&1 | tee import.log
+          # Fail if any ERROR: line was emitted
+          if grep -q "^ERROR:" import.log; then
+            echo "Import errors detected:"
+            grep "^ERROR:" import.log
+            exit 1
+          fi
+        working-directory: godot
+
+  export-android-debug:
+    name: Export Android debug APK
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: validate-project
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download Godot + export templates
+        run: |
+          GODOT_FILENAME="Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64"
+          TEMPLATES_DIR="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/${GODOT_FILENAME}.zip" \
+            -o godot.zip
+          unzip -q godot.zip
+          chmod +x "${GODOT_FILENAME}"
+          echo "GODOT_BIN=$(pwd)/${GODOT_FILENAME}" >> $GITHUB_ENV
+
+          mkdir -p "${TEMPLATES_DIR}"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz" \
+            -o templates.tpz
+          unzip -q templates.tpz -d templates_unzip
+          mv templates_unzip/templates/* "${TEMPLATES_DIR}/"
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkey -v \
+            -keystore debug.keystore \
+            -alias androiddebugkey \
+            -storepass android \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          echo "DEBUG_KEYSTORE=$(pwd)/debug.keystore" >> $GITHUB_ENV
+
+      - name: Export APK
+        run: |
+          mkdir -p exports/android
+          "$GODOT_BIN" --headless --export-debug "Android" exports/android/dodorassik-debug.apk
+        working-directory: godot
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dodorassik-debug-apk
+          path: godot/exports/android/dodorassik-debug.apk
+          retention-days: 30

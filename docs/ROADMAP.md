@@ -98,7 +98,21 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       - `GET /api/public/hunts` → endpoint JSON pour le catalogue public.
 - [x] **HuntCategory** : distinction `Permanent` / `Event` sur les chasses,
       avec `EventStartUtc` / `EventEndUtc` pour les événements temporaires.
-- [ ] Console super-admin web (séparée du jeu) — peut être un projet Blazor
-- [ ] Statistiques d'usage (familles actives, parcours populaires)
-- [ ] CI/CD GitHub Actions (build serveur + export Godot Android)
-- [ ] Déploiement Docker / Fly.io / Azure App Service
+- [x] **Console super-admin web** : SPA vanilla JS/HTML servie à `/admin/index.html`
+      par le même serveur ASP.NET. Login JWT → onglets Statistiques / Modération /
+      Tous les parcours. Approve, reject (raison obligatoire), takedown inline.
+      Aucun framework tiers, aucun cookie supplémentaire — utilise le JWT Bearer
+      existant stocké en `sessionStorage`.
+- [x] **Statistiques d'usage** : `StatsController` (`GET /api/admin/stats`,
+      `[Authorize(Roles="super_admin")]`) — familles totales / actives 30j,
+      utilisateurs, parcours par statut, soumissions acceptées total / 7j,
+      modèles de bibliothèque, top-10 parcours par soumissions.
+- [x] **CI/CD GitHub Actions** :
+      - `ci-server.yml` : build + test .NET 8 sur push/PR paths `server/**` ;
+        audit `dotnet list package --vulnerable` en fin de job.
+      - `ci-godot.yml` : import headless Godot 4.6 (détection d'erreurs GDScript)
+        sur push/PR paths `godot/**` ; export APK debug uniquement sur `main`.
+- [x] **Déploiement Docker** : `server/Dockerfile` multi-stage (sdk:8.0 → aspnet:8.0),
+      `docker-compose.yml` enrichi avec service `api` + healthcheck postgres,
+      secrets passés via variables d'environnement (`JWT_SECRET`, `POSTGRES_PASSWORD`,
+      `CORS_ORIGIN`), `server/.dockerignore`.

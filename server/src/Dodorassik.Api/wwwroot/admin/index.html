@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dodorassik — Console super-admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #242736;
+      --border: #2e3248; --accent: #6c63ff; --accent2: #3ecf8e;
+      --danger: #f56565; --warn: #ed8936;
+      --text: #e2e8f0; --muted: #718096;
+      --radius: 8px; --font: system-ui, sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font);
+           font-size: 14px; min-height: 100vh; }
+
+    /* ---- Layout ---- */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border);
+             padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header .badge { background: var(--accent); color: #fff; font-size: 11px;
+                    padding: 2px 8px; border-radius: 99px; }
+    #user-info { margin-left: auto; color: var(--muted); font-size: 13px; }
+    #logout-btn { background: none; border: 1px solid var(--border); color: var(--text);
+                  padding: 4px 12px; border-radius: var(--radius); cursor: pointer; }
+    #logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    nav { background: var(--surface); border-bottom: 1px solid var(--border);
+          display: flex; gap: 2px; padding: 0 24px; }
+    nav button { background: none; border: none; color: var(--muted); padding: 12px 16px;
+                 cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent;
+                 transition: color 0.15s; }
+    nav button:hover { color: var(--text); }
+    nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    main { flex: 1; padding: 24px; max-width: 1100px; width: 100%; margin: 0 auto; }
+
+    /* ---- Login ---- */
+    #login-view { display: flex; align-items: center; justify-content: center;
+                  min-height: 80vh; }
+    .login-card { background: var(--surface); border: 1px solid var(--border);
+                  border-radius: var(--radius); padding: 40px; width: 360px; }
+    .login-card h2 { margin-bottom: 24px; font-size: 20px; text-align: center; }
+
+    /* ---- Forms ---- */
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field label { font-size: 12px; color: var(--muted); text-transform: uppercase;
+                   letter-spacing: 0.05em; }
+    input[type=email], input[type=password], input[type=text], textarea, select {
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: 8px 12px; border-radius: var(--radius); font-size: 14px; width: 100%;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: var(--accent);
+    }
+    textarea { resize: vertical; min-height: 60px; }
+
+    /* ---- Buttons ---- */
+    .btn { padding: 8px 16px; border-radius: var(--radius); border: none;
+           cursor: pointer; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-success { background: var(--accent2); color: #000; }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-ghost   { background: var(--surface2); color: var(--text); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* ---- Alerts ---- */
+    .alert { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px;
+             font-size: 13px; }
+    .alert-error { background: rgba(245,101,101,0.15); border: 1px solid var(--danger);
+                   color: var(--danger); }
+    .alert-ok    { background: rgba(62,207,142,0.12); border: 1px solid var(--accent2);
+                   color: var(--accent2); }
+
+    /* ---- Stats grid ---- */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                  gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border);
+                 border-radius: var(--radius); padding: 20px; }
+    .stat-card .value { font-size: 32px; font-weight: 700; color: var(--accent); }
+    .stat-card .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ---- Table ---- */
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px;
+                     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600;
+         border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* ---- Hunt card (moderation) ---- */
+    .hunt-card { background: var(--surface); border: 1px solid var(--border);
+                 border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .hunt-card .hunt-name { font-weight: 700; font-size: 15px; }
+    .hunt-card .hunt-meta { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+    .hunt-card .hunt-desc { color: var(--text); margin-bottom: 12px; line-height: 1.5; }
+    .hunt-card .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+    .reject-form { margin-top: 10px; display: flex; gap: 8px; }
+    .reject-form input { flex: 1; }
+
+    .badge { display: inline-block; font-size: 11px; padding: 2px 8px;
+             border-radius: 99px; font-weight: 600; }
+    .badge-submitted { background: rgba(237,137,54,0.2); color: var(--warn); }
+    .badge-published  { background: rgba(62,207,142,0.2); color: var(--accent2); }
+    .badge-rejected   { background: rgba(245,101,101,0.2); color: var(--danger); }
+    .badge-archived   { background: rgba(113,128,150,0.2); color: var(--muted); }
+
+    .empty-state { color: var(--muted); text-align: center; padding: 48px; }
+    .spinner { color: var(--muted); text-align: center; padding: 32px; }
+    .refresh-row { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .ts { font-size: 11px; color: var(--muted); margin-left: 8px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Login view (shown when not authenticated) -->
+  <div id="login-view">
+    <div class="login-card">
+      <h2>🛡️ Console super-admin</h2>
+      <div id="login-error" class="alert alert-error" style="display:none"></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="password" autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- Main app (shown when authenticated) -->
+  <div id="app-view" style="display:none">
+    <header>
+      <h1>🗺️ Dodorassik</h1>
+      <span class="badge">Super-admin</span>
+      <span id="user-info"></span>
+      <button id="logout-btn" onclick="doLogout()">Déconnexion</button>
+    </header>
+    <nav>
+      <button id="tab-stats" class="active" onclick="showTab('stats')">📊 Statistiques</button>
+      <button id="tab-moderation" onclick="showTab('moderation')">🔍 Modération</button>
+      <button id="tab-all-hunts" onclick="showTab('all-hunts')">📋 Tous les parcours</button>
+    </nav>
+    <main>
+
+      <!-- Stats tab -->
+      <div id="view-stats">
+        <div class="refresh-row">
+          <button class="btn btn-ghost btn-sm" onclick="loadStats()">↻ Rafraîchir</button>
+        </div>
+        <div id="stats-content"><div class="spinner">Chargement…</div></div>
+      </div>
+
+      <!-- Moderation tab -->
+      <div id="view-moderation" style="display:none">
+        <div class="refresh-row">
+          <button class="btn btn-ghost btn-sm" onclick="loadModeration()">↻ Rafraîchir</button>
+        </div>
+        <div id="mod-alert"></div>
+        <div id="mod-content"><div class="spinner">Chargement…</div></div>
+      </div>
+
+      <!-- All hunts tab -->
+      <div id="view-all-hunts" style="display:none">
+        <div class="refresh-row">
+          <label style="color:var(--muted);font-size:12px;margin-right:8px">Statut :</label>
+          <select id="hunt-status-filter" onchange="loadAllHunts()" style="width:140px;margin-right:8px">
+            <option value="">Tous</option>
+            <option value="published">Publiés</option>
+            <option value="submitted">Soumis</option>
+            <option value="draft">Brouillons</option>
+            <option value="rejected">Rejetés</option>
+            <option value="archived">Archivés</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadAllHunts()">↻ Rafraîchir</button>
+        </div>
+        <div id="all-hunts-content"><div class="spinner">Chargement…</div></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+let jwt = sessionStorage.getItem('dodo_jwt') || '';
+let apiBase = '';  // same origin
+
+// ---- Bootstrap ----
+window.addEventListener('DOMContentLoaded', () => {
+  if (jwt) showApp();
+});
+
+// ---- Auth ----
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  btn.disabled = true;
+  btn.textContent = 'Connexion…';
+  errEl.style.display = 'none';
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    const res = await api('POST', '/api/auth/login', { email, password }, false);
+    if (!res.ok) {
+      const msg = res.data?.error || `HTTP ${res.status}`;
+      if (msg === 'invalid_credentials') {
+        showError(errEl, 'Identifiants incorrects.');
+      } else {
+        showError(errEl, `Erreur : ${msg}`);
+      }
+      return;
+    }
+    jwt = res.data.token;
+    const role = res.data.role;
+    if (role !== 'super_admin') {
+      jwt = '';
+      showError(errEl, 'Ce compte n\'a pas les droits super-admin.');
+      return;
+    }
+    sessionStorage.setItem('dodo_jwt', jwt);
+    showApp();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
+}
+
+function doLogout() {
+  jwt = '';
+  sessionStorage.removeItem('dodo_jwt');
+  document.getElementById('app-view').style.display = 'none';
+  document.getElementById('login-view').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('app-view').style.display = '';
+  // Parse display name from JWT payload
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    document.getElementById('user-info').textContent = payload.name || payload.sub || '';
+  } catch { /* ignore */ }
+  loadStats();
+}
+
+// ---- Tab navigation ----
+function showTab(name) {
+  ['stats', 'moderation', 'all-hunts'].forEach(t => {
+    document.getElementById(`view-${t}`).style.display = t === name ? '' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+  });
+  if (name === 'stats') loadStats();
+  if (name === 'moderation') loadModeration();
+  if (name === 'all-hunts') loadAllHunts();
+}
+
+// ---- Stats ----
+async function loadStats() {
+  const el = document.getElementById('stats-content');
+  el.innerHTML = '<div class="spinner">Chargement…</div>';
+  const res = await api('GET', '/api/admin/stats');
+  if (!res.ok) { el.innerHTML = `<div class="alert alert-error">Erreur : ${res.data?.error || res.status}</div>`; return; }
+  const s = res.data;
+  el.innerHTML = `
+    <div class="stats-grid">
+      ${statCard(s.totalFamilies, 'Familles')}
+      ${statCard(s.activeFamiliesLast30Days, 'Familles actives (30j)')}
+      ${statCard(s.totalUsers, 'Utilisateurs')}
+      ${statCard(s.totalHunts, 'Parcours total')}
+      ${statCard(s.publishedHunts, 'Publiés')}
+      ${statCard(s.pendingReviewHunts, 'En attente de révision')}
+      ${statCard(s.totalSubmissions, 'Soumissions acceptées')}
+      ${statCard(s.submissionsLast7Days, 'Soumissions (7j)')}
+      ${statCard(s.totalStepTemplates, 'Modèles de bibliothèque')}
+    </div>
+    ${s.topHunts.length ? `
+      <div class="section-title">🏆 Parcours populaires</div>
+      <table>
+        <thead><tr><th>#</th><th>Nom</th><th>Familles</th><th>Soumissions</th></tr></thead>
+        <tbody>
+          ${s.topHunts.map((h, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${esc(h.name)}</td>
+              <td>${h.familiesPlayed}</td>
+              <td>${h.totalSubmissions}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : ''}
+    <p class="ts">Généré le ${new Date(s.generatedAtUtc).toLocaleString('fr-FR')}</p>
+  `;
+}
+
+function statCard(value, label) {
+  return `<div class="stat-card"><div class="value">${value ?? '—'}</div><div class="label">${label}</div></div>`;
+}
+
+// ---- Moderation ----
+async function loadModeration() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div class="spinner">Chargement…</div>';
+  const res = await api('GET', '/api/admin/hunts');
+  if (!res.ok) { el.innerHTML = `<div class="alert alert-error">Erreur : ${res.data?.error || res.status}</div>`; return; }
+  const hunts = res.data;
+  if (!hunts || hunts.length === 0) {
+    el.innerHTML = '<div class="empty-state">✅ Aucun parcours en attente de révision.</div>';
+    return;
+  }
+  el.innerHTML = hunts.map(h => huntCard(h)).join('');
+}
+
+function huntCard(h) {
+  const desc = (h.description || '').slice(0, 150) + (h.description?.length > 150 ? '…' : '');
+  const steps = (h.steps || []).length;
+  return `
+    <div class="hunt-card" id="hcard-${h.id}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span class="hunt-name">${esc(h.name)}</span>
+        <span class="badge badge-submitted">Soumis</span>
+      </div>
+      <div class="hunt-meta">${steps} étape(s) &bull; créateur ID : ${h.creatorId} &bull; ID : ${h.id}</div>
+      <div class="hunt-desc">${esc(desc) || '<em>Pas de description.</em>'}</div>
+      <div class="actions">
+        <button class="btn btn-success btn-sm" onclick="approveHunt('${h.id}')">✅ Approuver</button>
+        <button class="btn btn-danger btn-sm" onclick="toggleRejectForm('${h.id}')">❌ Rejeter</button>
+        <button class="btn btn-ghost btn-sm" onclick="takedownHunt('${h.id}')">🚫 Retrait d'urgence</button>
+      </div>
+      <div id="reject-form-${h.id}" style="display:none;margin-top:10px">
+        <div class="reject-form">
+          <input type="text" id="reason-${h.id}" placeholder="Raison du rejet (obligatoire, 5 car. min)" />
+          <button class="btn btn-danger btn-sm" onclick="confirmReject('${h.id}')">Confirmer</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleRejectForm('${h.id}')">Annuler</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleRejectForm(id) {
+  const el = document.getElementById(`reject-form-${id}`);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+async function approveHunt(id) {
+  setModAlert('', '');
+  const res = await api('POST', `/api/admin/hunts/${id}/approve`);
+  if (res.ok) {
+    document.getElementById(`hcard-${id}`)?.remove();
+    if (!document.querySelector('.hunt-card'))
+      document.getElementById('mod-content').innerHTML = '<div class="empty-state">✅ Aucun parcours en attente.</div>';
+    setModAlert('Parcours approuvé et publié.', 'ok');
+  } else {
+    setModAlert(`Erreur : ${res.data?.error || res.status}`, 'error');
+  }
+}
+
+async function confirmReject(id) {
+  const reason = document.getElementById(`reason-${id}`).value.trim();
+  if (reason.length < 5) { setModAlert('La raison doit contenir au moins 5 caractères.', 'error'); return; }
+  const res = await api('POST', `/api/admin/hunts/${id}/reject`, { reason });
+  if (res.ok) {
+    document.getElementById(`hcard-${id}`)?.remove();
+    if (!document.querySelector('.hunt-card'))
+      document.getElementById('mod-content').innerHTML = '<div class="empty-state">✅ Aucun parcours en attente.</div>';
+    setModAlert('Parcours rejeté.', 'ok');
+  } else {
+    setModAlert(`Erreur : ${res.data?.error || res.status}`, 'error');
+  }
+}
+
+async function takedownHunt(id) {
+  if (!confirm('Confirmer le retrait d\'urgence de ce parcours ?')) return;
+  const res = await api('POST', `/api/admin/hunts/${id}/takedown`);
+  if (res.ok) {
+    document.getElementById(`hcard-${id}`)?.remove();
+    setModAlert('Parcours retiré.', 'ok');
+  } else {
+    setModAlert(`Erreur : ${res.data?.error || res.status}`, 'error');
+  }
+}
+
+function setModAlert(msg, type) {
+  const el = document.getElementById('mod-alert');
+  if (!msg) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="alert alert-${type === 'ok' ? 'ok' : 'error'}">${esc(msg)}</div>`;
+}
+
+// ---- All hunts ----
+async function loadAllHunts() {
+  const el = document.getElementById('all-hunts-content');
+  el.innerHTML = '<div class="spinner">Chargement…</div>';
+  const status = document.getElementById('hunt-status-filter').value;
+  const qs = status ? `?status=${status}` : '';
+  const res = await api('GET', `/api/hunts${qs}`);
+  if (!res.ok) { el.innerHTML = `<div class="alert alert-error">Erreur : ${res.data?.error || res.status}</div>`; return; }
+  const hunts = res.data;
+  if (!hunts || hunts.length === 0) { el.innerHTML = '<div class="empty-state">Aucun parcours.</div>'; return; }
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Nom</th><th>Statut</th><th>Mode</th><th>Créateur</th><th>Étapes</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${hunts.map(h => `
+          <tr>
+            <td>${esc(h.name)}</td>
+            <td><span class="badge badge-${h.status}">${h.status}</span></td>
+            <td>${h.mode}</td>
+            <td style="font-size:11px">${h.creatorId?.slice(0,8)}…</td>
+            <td>${(h.steps || []).length}</td>
+            <td>
+              ${h.status === 'published' ? `<button class="btn btn-ghost btn-sm" onclick="takedownHuntGlobal('${h.id}')">🚫 Retirer</button>` : ''}
+              ${h.status === 'submitted' ? `<button class="btn btn-success btn-sm" onclick="approveHuntGlobal('${h.id}', this)">✅</button>` : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function takedownHuntGlobal(id) {
+  if (!confirm('Confirmer le retrait ?')) return;
+  const res = await api('POST', `/api/admin/hunts/${id}/takedown`);
+  if (res.ok) loadAllHunts(); else alert(`Erreur : ${res.data?.error || res.status}`);
+}
+
+async function approveHuntGlobal(id, btn) {
+  btn.disabled = true;
+  const res = await api('POST', `/api/admin/hunts/${id}/approve`);
+  if (res.ok) loadAllHunts(); else { btn.disabled = false; alert(`Erreur : ${res.data?.error || res.status}`); }
+}
+
+// ---- HTTP helper ----
+async function api(method, path, body = null, withAuth = true) {
+  const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  if (withAuth && jwt) headers['Authorization'] = `Bearer ${jwt}`;
+  try {
+    const resp = await fetch(apiBase + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    let data = null;
+    const text = await resp.text();
+    if (text) try { data = JSON.parse(text); } catch { /* non-JSON */ }
+    if (resp.status === 401) { doLogout(); return { ok: false, status: 401, data: null }; }
+    return { ok: resp.ok, status: resp.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: e.message } };
+  }
+}
+
+// ---- Utilities ----
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = '';
+}
+
+// Submit login on Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-view').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>

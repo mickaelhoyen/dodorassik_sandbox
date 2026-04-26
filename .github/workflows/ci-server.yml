@@ -1,0 +1,46 @@
+name: CI — Server
+
+on:
+  push:
+    branches: [main, "claude/**", "feat/**", "fix/**", "docs/**"]
+    paths: ["server/**"]
+  pull_request:
+    paths: ["server/**"]
+
+jobs:
+  build-test:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: server
+
+      - name: Build (Release)
+        run: dotnet build --no-restore -c Release
+        working-directory: server
+
+      - name: Run tests
+        run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
+        working-directory: server
+        # Tests use in-memory EF Core — no database service needed.
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: server/TestResults/*.trx
+
+      - name: Audit vulnerable packages
+        run: dotnet list package --vulnerable --include-transitive
+        working-directory: server
+        continue-on-error: true

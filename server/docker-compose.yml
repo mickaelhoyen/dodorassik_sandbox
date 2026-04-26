@@ -5,11 +5,36 @@ services:
     environment:
       POSTGRES_DB: dodorassik
       POSTGRES_USER: dodorassik
-      POSTGRES_PASSWORD: dodorassik
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dodorassik}
     ports:
       - "5432:5432"
     volumes:
       - dodorassik-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dodorassik"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dodorassik-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=dodorassik;Username=dodorassik;Password=${POSTGRES_PASSWORD:-dodorassik}
+      - Jwt__Secret=${JWT_SECRET:-REPLACE_ME_WITH_AT_LEAST_32_CHAR_SECRET}
+      - Jwt__Issuer=dodorassik
+      - Jwt__Audience=dodorassik
+      - Jwt__LifetimeMinutes=10080
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN:-https://example.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   dodorassik-pg:

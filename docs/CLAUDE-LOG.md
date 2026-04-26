@@ -16,7 +16,7 @@
 ## 2026-04-26 — Phase 2 + cadre security/privacy
 
 **Branche** : `claude/godot-family-game-7x9Ki`
-**Commit** : (à remplir)
+**Commit** : `5566752`
 
 ### Requête utilisateur
 

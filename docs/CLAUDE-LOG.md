@@ -13,6 +13,186 @@
 
 ---
 
+## 2026-04-26 — MVP : modération super-admin + plugin Android natif + dette de tests
+
+**Branche** : `claude/mvp-moderation-android-tests`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> intégres immédiatement toutes tes remarques (passage sur les dettes) et
+> commence à livrer un MVP exploitable avec les trois points suggérés
+
+### Analyse
+
+Trois axes priorisés, plus la dette discrète :
+
+1. **Plugin Android natif** — `LocationModule`, `CameraModule`,
+   `BluetoothModule` étaient des stubs `not_implemented`. Implémentation :
+   - `LocationModule` synchrone avec `FusedLocationProviderClient.getCurrentLocation`,
+     `CountDownLatch` 5 s, annulation propre si timeout.
+   - `CameraModule` asynchrone : intent `ACTION_IMAGE_CAPTURE` + `FileProvider`
+     pointant sur `getExternalFilesDir(DIRECTORY_PICTURES)` (espace privé
+     application, non visible dans la galerie). Le résultat arrive via
+     `onMainActivityResult` → signal `photo_captured`.
+   - `BluetoothModule` asynchrone : `BluetoothLeScanner` avec un
+     `ScanFilter.setDeviceAddress` par MAC de la whitelist + double
+     filtre côté `onScanResult` (belt-and-braces) ; sentinel timeout
+     émis comme `(name="", address="", rssi=-1)`.
+   - Wiring Gradle complet : `build.gradle` (compileOnly godot-lib,
+     play-services-location, androidx.core), `settings.gradle`,
+     `consumer-rules.pro`, ressource `dodorassik_file_paths.xml`,
+     mise à jour de `AndroidManifest.xml` pour déclarer le FileProvider.
+   - `device_services.gd` adapté pour le pattern pending+signal : le
+     wrapper Godot `await` les signaux `photo_captured` et
+     `bluetooth_device_found` après l'appel natif.
+
+2. **Modération super-admin** (item phase 4 cocher) — workflow complet
+   `Draft → Submitted → Published / Rejected`, plus `Archived`. Plus aucun
+   `POST /api/hunts/{id}/publish` accessible à un creator : la
+   publication est l'apanage du super-admin via `AdminHuntsController`.
+   Endpoints :
+   - `POST /api/hunts/{id}/submit-for-review`, `/withdraw`, `/archive`
+   - `GET /api/admin/hunts?status=...`, `POST /api/admin/hunts/{id}/approve`,
+     `/reject` (raison ≥ 5 chars obligatoire), `/takedown` (urgence)
+   - Verrou : `PUT /api/hunts/{id}` et les endpoints clue sur une chasse
+     `Submitted` ou `Published` retournent `409 hunt_locked`.
+   - `Hunt` gagne `SubmittedAtUtc`, `ReviewedAtUtc`, `ReviewedById`,
+     `RejectionReason` (≤ 2 000 chars). Index `IX_Hunts_Status` pour
+     accélérer la queue.
+   - Filtre du `GET /api/hunts` : par défaut anonyme/non-creator → seules
+     les `Published` ; super_admin peut filtrer par `?status=` ; creator
+     avec `?mine=true` voit ses propres drafts.
+
+3. **Tests des nouveautés** — neuf nouveaux fichiers/sections couvrent
+   la dette signalée :
+   - `FamiliesApiTests` (create/join/leave/404)
+   - `PublicApiTests` (Published only, fenêtre événement, filtre catégorie,
+     anti-fuite PII)
+   - `HuntsModerationApiTests` (workflow complet, raison obligatoire,
+     locked-on-submitted, takedown, accès player refusé)
+   - Extensions `AuthApiTests` : signup creator, refus self-promotion
+     super_admin/admin/inconnu (Theory)
+   - Extensions `HuntsApiTests` : duplicate clue, too_many_clues, PUT
+     upsert + suppression d'orphelins, PUT cross-creator forbidden,
+     `/clues` POST duplicate, `?mine=true`
+   - `TestUserHelper` factorise register/promote.
+
+4. **Rate limit Razor `/Signup`** — `[EnableRateLimiting("auth-register")]`
+   posé sur `OnPostAsync` (pas sur la classe pour ne pas limiter le GET).
+   Le bypass via le formulaire web est désormais bouché.
+
+5. **Documentation Testcontainers** — `server/tests/Dodorassik.Api.Tests/README.md`
+   liste les limites de l'InMemory provider (jsonb, contraintes uniques,
+   cascade, transactions, fonctions Postgres) et donne le snippet exact
+   pour passer à Testcontainers PostgreSQL en option.
+
+Alternatives rejetées :
+
+- **Bloquer la photo en synchrone** comme la location → impossible :
+  `startActivityForResult` est asynchrone et bloquer le thread Godot
+  empêche le rendu UI. Le pattern `pending + signal` est imposé.
+- **Sauter le double filtre Bluetooth** côté Java → garder pour défense
+  en profondeur si fuite OEM Android.
+- **Permettre au super-admin d'éditer une `Published` en place** →
+  bypass de modération. La chasse doit être archivée puis recréée.
+
+### Modifications
+
+#### Plugin Android (Java + Gradle)
+
+- **`godot/android/plugin/src/main/java/com/dodorassik/device/LocationModule.java`**
+  réécrit (FusedLocationProviderClient, timeout 5 s).
+- **`.../CameraModule.java`** réécrit (intent + FileProvider).
+- **`.../BluetoothModule.java`** réécrit (LeScanner + whitelist).
+- **`.../DodorassikDevice.java`** : signal `photo_captured`, override
+  `onMainActivityResult`.
+- **`godot/android/plugin/src/main/AndroidManifest.xml`** : provider
+  FileProvider via `${applicationId}.fileprovider`.
+- **`.../res/xml/dodorassik_file_paths.xml`** *(nouveau)*
+- **`.../build.gradle`**, **`.../settings.gradle`**,
+  **`.../consumer-rules.pro`** *(nouveaux)*
+
+#### Côté Godot
+
+- **`godot/scripts/autoload/device_services.gd`** : signal
+  `photo_captured` ajouté, wrappers `capture_photo`/`scan_bluetooth`
+  await les signaux natifs.
+- **`godot/scripts/ui/hunt_runner.gd`** : photo step renvoie
+  `photo_size_bytes` + `photo_taken: true`, jamais le path
+  (cf. PRIVACY.md §3).
+
+#### Backend — modération
+
+- **`server/src/Dodorassik.Core/Domain/Enums.cs`** : `Submitted`, `Rejected`.
+- **`server/src/Dodorassik.Core/Domain/Hunt.cs`** : 4 champs modération.
+- **`server/src/Dodorassik.Infrastructure/Persistence/AppDbContext.cs`** :
+  `RejectionReason` HasMaxLength + index `Status`.
+- **`server/src/Dodorassik.Api/Controllers/AdminHuntsController.cs`** *(nouveau)*
+- **`server/src/Dodorassik.Api/Controllers/HuntsController.cs`** : Publish→
+  SubmitForReview, Withdraw, Archive, hunt_locked guards, List filtre
+  par défaut Published.
+- **`server/src/Dodorassik.Api/Dtos/HuntDtos.cs`** : `HuntDto` étendu.
+
+#### Backend — rate limit Razor
+
+- **`server/src/Dodorassik.Api/Pages/Signup.cshtml.cs`** :
+  `[EnableRateLimiting("auth-register")]` sur `OnPostAsync`.
+
+#### Tests
+
+- **`server/tests/Dodorassik.Api.Tests/TestUserHelper.cs`** *(nouveau)*
+- **`.../FamiliesApiTests.cs`**, **`.../PublicApiTests.cs`**,
+  **`.../HuntsModerationApiTests.cs`** *(nouveaux)*
+- **`.../AuthApiTests.cs`**, **`.../HuntsApiTests.cs`** *(étendus)*
+- **`.../README.md`** *(nouveau)* : limites InMemory + recette
+  Testcontainers.
+
+#### SQL
+
+- **`server/db/init.sql`** : 4 colonnes modération + index
+  `IX_Hunts_Status`.
+- **`server/db/migrate_add_moderation.sql`** *(nouveau, idempotent)*
+
+#### Documentation
+
+- **`docs/ROADMAP.md`** : phase 2 Android natif coché, phase 4
+  "Validation super-admin" coché, couverture des tests étendue.
+- **`docs/API.md`** : sections "Workflow de modération", "Édition
+  verrouillée", "Admin (modération)" ; ancien `/publish` retiré.
+- **`docs/CLAUDE-LOG.md`** : cette entrée.
+
+### Security & Privacy review
+
+- **Pas de nouvelle PII enfant**. `ReviewedById` référence un
+  super_admin (adulte) uniquement.
+- **Modération obligatoire** (CLAUDE.md §3, art. 8 RGPD renforcé) :
+  test `PublicApiTests.Returns_only_published_hunts` couvre les
+  statuts intermédiaires (`Draft`, `Submitted`, `Rejected`, `Archived`).
+- **Logs de modération** : seuls `HuntId` et `ReviewerId` (Guid),
+  jamais le contenu de la chasse, ni le creator, ni la raison de rejet
+  → conforme `CLAUDE.md` §2.10.
+- **Rate limit complet** : Razor n'est plus un bypass. Invariant
+  `SECURITY.md` §4 respecté.
+- **Photo** : `hunt_runner.gd` ne soumet plus le `path` au serveur,
+  juste `photo_taken` + taille — durcissement par rapport au commit
+  initial.
+- **Bluetooth filter** : double filtre (OS + plugin), aucun appareil
+  tiers ne fuit jamais à GDScript, même via les logs.
+- **Verrou `hunt_locked`** : empêche le "approval drift" (mutation
+  silencieuse d'une chasse approuvée).
+- **Tests InMemory** : aucune donnée hors process. La voie
+  Testcontainers est cadrée comme option dev locale.
+
+### Reste à faire (suivi)
+
+- Validation sur appareil physique du plugin Android (build AAR + test
+  GPS / photo / Bluetooth Android 14+).
+- Refresh tokens (`SECURITY.md` §10).
+- Console super-admin web Blazor (phase 5).
+
+---
+
 ## 2026-04-26 — Inscription créateur Godot + interface web publique
 
 **Branche** : `claude/add-creator-signup-TuwbZ`

@@ -1,0 +1,58 @@
+// Build script for the DodorassikDevice Android plugin (Godot 4.6).
+//
+// Usage:
+//   1. Drop godot-lib.4.6.stable.release.aar in libs/ (see README.md).
+//   2. ./gradlew assembleDebug   → build/outputs/aar/dodorassik-device-debug.aar
+//   3. ./gradlew assembleRelease → build/outputs/aar/dodorassik-device-release.aar
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.5.2'
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.dodorassik.device'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 34
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        debug { minifyEnabled false }
+        release { minifyEnabled false }
+    }
+
+    libraryVariants.configureEach { variant ->
+        variant.outputs.configureEach { out ->
+            out.outputFileName = "dodorassik-device-${variant.name}.aar"
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // godot-lib.<version>.aar must be dropped in libs/ before building.
+    compileOnly fileTree(dir: 'libs', include: ['godot-lib.*.aar'])
+
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+}

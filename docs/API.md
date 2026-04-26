@@ -60,9 +60,42 @@ Détail d'une chasse, incluant ses `steps` (triées par `order`).
 }
 ```
 
-### `POST /api/hunts/{id}/publish` *(role: Creator | SuperAdmin)*
+### Workflow de modération
 
-Bascule le statut à `published`. `204` si OK.
+Un creator ne peut **plus** publier directement. La publication passe par
+le super-admin :
+
+```
+Draft  ──┐                                    ┌── Published ── /archive ── Archived
+         │                                    │
+         └── /submit-for-review ── Submitted ─┤
+                       ▲                      │
+                       │── /withdraw ─────────┤
+                                              │
+                                              └── /admin/.../reject ── Rejected
+                                                                          │
+                                                                          └── re-submit
+```
+
+### `POST /api/hunts/{id}/submit-for-review` *(role: Creator | SuperAdmin)*
+
+Le creator soumet une chasse `Draft` ou `Rejected` pour revue. La chasse
+doit avoir au moins une étape, sinon `400 hunt_has_no_steps`.
+
+### `POST /api/hunts/{id}/withdraw` *(role: Creator | SuperAdmin)*
+
+Annule une soumission encore `Submitted` et la repasse en `Draft`.
+
+### `POST /api/hunts/{id}/archive` *(role: Creator | SuperAdmin)*
+
+Retire une chasse `Published` du catalogue public. La chasse devient
+`Archived`. Les scores existants sont conservés.
+
+### Édition verrouillée
+
+`PUT /api/hunts/{id}` et les endpoints sur les clues retournent
+`409 hunt_locked` si la chasse est `Submitted` ou `Published`. Le creator
+doit `withdraw` ou `archive` avant de modifier.
 
 ### `POST /api/hunts/{huntId}/steps/{stepId}/submit` *(authentifié)*
 
@@ -77,6 +110,35 @@ Réponse `200`:
 ```json
 { "accepted": true, "awardedPoints": 10, "message": null }
 ```
+
+## Admin (modération)
+
+Toutes les routes ci-dessous demandent `[Authorize(Roles="super_admin")]`.
+
+### `GET /api/admin/hunts?status=submitted`
+
+File de modération. Trie par `submittedAtUtc` croissant pour traiter les
+plus anciennes en premier. Le paramètre `status` accepte n'importe quelle
+valeur de `HuntStatus`.
+
+### `POST /api/admin/hunts/{id}/approve`
+
+Passe une chasse `Submitted` en `Published` et la rend visible sur
+`/api/public/hunts`.
+
+### `POST /api/admin/hunts/{id}/reject`
+
+```json
+{ "reason": "Référence à un nom d'enfant — interdit (CLAUDE.md §3)." }
+```
+
+Le motif est obligatoire (5 caractères minimum) et est stocké pour que
+le creator puisse le voir et corriger sa chasse.
+
+### `POST /api/admin/hunts/{id}/takedown`
+
+Force-takedown : retire de la publication n'importe quelle chasse, même
+si elle est déjà `Published`. Pour réagir à un signalement urgent.
 
 ## Users (RGPD)
 

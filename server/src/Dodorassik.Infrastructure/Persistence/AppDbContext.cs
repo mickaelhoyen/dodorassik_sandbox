@@ -37,9 +37,11 @@ public class AppDbContext : DbContext
         {
             e.Property(h => h.Name).HasMaxLength(256).IsRequired();
             e.Property(h => h.Description).HasMaxLength(4000);
+            e.Property(h => h.RejectionReason).HasMaxLength(2000);
             e.HasOne(h => h.Creator).WithMany().HasForeignKey(h => h.CreatorId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(h => h.Steps).WithOne(s => s.Hunt!).HasForeignKey(s => s.HuntId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(h => h.Clues).WithOne(c => c.Hunt!).HasForeignKey(c => c.HuntId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(h => h.Status);
         });
 
         b.Entity<HuntStep>(e =>

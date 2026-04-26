@@ -36,9 +36,14 @@ CREATE TABLE IF NOT EXISTS "Hunts" (
     "Category"        integer       NOT NULL DEFAULT 0,
     "EventStartUtc"   timestamptz   NULL,
     "EventEndUtc"     timestamptz   NULL,
+    "SubmittedAtUtc"  timestamptz   NULL,
+    "ReviewedAtUtc"   timestamptz   NULL,
+    "ReviewedById"    uuid          NULL,
+    "RejectionReason" varchar(2000) NULL,
     "CreatedAtUtc"    timestamptz   NOT NULL,
     "UpdatedAtUtc"    timestamptz   NOT NULL
 );
+CREATE INDEX IF NOT EXISTS "IX_Hunts_Status" ON "Hunts" ("Status");
 
 CREATE TABLE IF NOT EXISTS "HuntSteps" (
     "Id"              uuid          NOT NULL PRIMARY KEY,

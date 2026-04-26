@@ -5,6 +5,7 @@ using Dodorassik.Core.Domain;
 using Dodorassik.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dodorassik.Api.Pages;
@@ -28,6 +29,10 @@ public class SignupModel : PageModel
 
     public IActionResult OnGet() => Page();
 
+    // The Razor signup must obey the same throttling as POST /api/auth/register
+    // (3 / hour / IP). Without this, an attacker could bypass the API limiter
+    // just by hitting /Signup. See docs/SECURITY.md §4.
+    [EnableRateLimiting("auth-register")]
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)

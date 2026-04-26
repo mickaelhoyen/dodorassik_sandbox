@@ -27,6 +27,16 @@ public class Hunt
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
+    // ----- Moderation workflow -----
+    /// <summary>When the creator submitted this hunt for review.</summary>
+    public DateTime? SubmittedAtUtc { get; set; }
+    /// <summary>When a super-admin approved or rejected this hunt.</summary>
+    public DateTime? ReviewedAtUtc { get; set; }
+    /// <summary>Super-admin who took the latest review decision.</summary>
+    public Guid? ReviewedById { get; set; }
+    /// <summary>Free-text reason filled by the super-admin when status = Rejected.</summary>
+    public string? RejectionReason { get; set; }
+
     public List<HuntStep> Steps { get; set; } = new();
     public List<Clue> Clues { get; set; } = new();
     public List<HuntScore> Scores { get; set; } = new();

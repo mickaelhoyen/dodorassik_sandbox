@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.dodorassik.device">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Location: requested at runtime, used one-shot. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -25,4 +25,22 @@
         NOTE: no INTERNET permission here. Network access stays in the main
         app (Godot core + ApiClient). This plugin must not exfiltrate.
     -->
+
+    <application>
+        <!--
+            FileProvider for camera capture. The authority MUST be of the form
+            <package>.fileprovider — CameraModule looks it up that way.
+            We use ${applicationId} so the same plugin works for any host
+            package without recompilation.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/dodorassik_file_paths" />
+        </provider>
+    </application>
 </manifest>

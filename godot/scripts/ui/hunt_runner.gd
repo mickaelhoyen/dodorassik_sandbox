@@ -110,7 +110,13 @@ func _photo_validator(step: Dictionary) -> Node:
 		if not resp["ok"]:
 			set_status("Caméra indisponible: %s" % resp.get("error", "?"), true)
 			return
-		_complete_step(step, {"photo_path": resp.get("path", "")}))
+		var data: Dictionary = resp.get("data", {})
+		# We submit only a hash of the file path, not the path or the bytes.
+		# Photos stay on the device by default (see PRIVACY.md §3).
+		_complete_step(step, {
+			"photo_size_bytes": int(data.get("size_bytes", 0)),
+			"photo_taken": true,
+		}))
 	return btn
 
 

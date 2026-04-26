@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--
+        Photos taken by the camera intent live in the app's PRIVATE external
+        files dir under DIRECTORY_PICTURES. Other apps cannot enumerate this
+        location; only the camera intent we just dispatched receives a temp
+        URI grant via FileProvider.
+    -->
+    <external-files-path name="hunt_photos" path="Pictures/" />
+</paths>

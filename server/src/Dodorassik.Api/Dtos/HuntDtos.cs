@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using Dodorassik.Api.Validation;
 using Dodorassik.Core.Domain;
 
 namespace Dodorassik.Api.Dtos;
@@ -23,17 +25,24 @@ public record HuntStepDto(
     bool BlocksNext);
 
 public record CreateHuntRequest(
+    [property: Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
     string Name,
+    [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
     string? Description,
     string? Mode,
+    [property: MaxLength(InputLimits.StepsPerHuntMax)]
     List<CreateHuntStepRequest>? Steps);
 
 public record CreateHuntStepRequest(
     Guid? Id,
+    [property: Required, StringLength(InputLimits.StepTitleMaxLength, MinimumLength = 1)]
     string Title,
+    [property: StringLength(InputLimits.StepDescriptionMaxLength)]
     string? Description,
+    [property: Required]
     string Type,
     JsonElement? Params,
+    [property: Range(0, 1_000)]
     int? Points,
     bool? BlocksNext);
 

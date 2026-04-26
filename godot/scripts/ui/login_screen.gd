@@ -45,6 +45,12 @@ func _on_login() -> void:
 		return
 
 	AppState.set_session(user, token, role)
+	# If the connected adult has no family yet, route to the family screen
+	# first — scoring and offline sync depend on it.
+	var family_id: Variant = user.get("familyId", null)
+	if family_id == null:
+		Router.go("family_select")
+		return
 	match role:
 		AppState.Role.SUPER_ADMIN: Router.go("super_admin_home")
 		AppState.Role.CREATOR: Router.go("creator_home")

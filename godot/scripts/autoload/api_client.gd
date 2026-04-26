@@ -67,6 +67,18 @@ func submit_step(hunt_id: String, step_id: String, payload: Dictionary) -> Dicti
 	return await request("POST", "/api/hunts/%s/steps/%s/submit" % [hunt_id, step_id], payload)
 
 
+func my_family() -> Dictionary:
+	return await request("GET", "/api/families/me")
+
+
+func create_family(name: String) -> Dictionary:
+	return await request("POST", "/api/families", {"name": name})
+
+
+func join_family(family_id: String) -> Dictionary:
+	return await request("POST", "/api/families/%s/join" % family_id)
+
+
 # ---------- Core request ----------
 
 func request(method: String, path: String, body: Variant = null) -> Dictionary:

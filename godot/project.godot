@@ -14,7 +14,7 @@ config/name="Dodorassik"
 config/description="Chasse au trésor familiale en environnement réel. Trois interfaces: super-admin, créateur de parcours, joueur."
 config/version="0.1.0"
 run/main_scene="res://scenes/common/main.tscn"
-config/features=PackedStringArray("4.3", "Mobile", "GL Compatibility")
+config/features=PackedStringArray("4.6", "Mobile", "GL Compatibility")
 config/icon="res://assets/icons/icon.svg"
 boot_splash/show_image=false
 
@@ -51,6 +51,17 @@ ui_back={
 [network]
 
 limits/tcp/connect_timeout_seconds=5
+
+[android]
+
+permissions/access_fine_location=true
+permissions/access_coarse_location=true
+permissions/camera=true
+permissions/bluetooth=true
+permissions/bluetooth_admin=true
+permissions/bluetooth_scan=true
+permissions/bluetooth_connect=true
+permissions/internet=true
 
 [rendering]
 

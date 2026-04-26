@@ -42,6 +42,10 @@ ou éditée dans `user://config.json`.
 
 ## Documentation
 
+- [`CLAUDE.md`](CLAUDE.md) — règles security/privacy by design suivies par Claude
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — vue d'ensemble technique
+- [`docs/SECURITY.md`](docs/SECURITY.md) — modèle de menaces et contre-mesures
+- [`docs/PRIVACY.md`](docs/PRIVACY.md) — politique RGPD (et public mineurs)
 - [`docs/API.md`](docs/API.md) — endpoints REST
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — étapes prévues
+- [`docs/CLAUDE-LOG.md`](docs/CLAUDE-LOG.md) — journal des interventions Claude

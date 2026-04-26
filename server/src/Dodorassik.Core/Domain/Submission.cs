@@ -22,6 +22,13 @@ public class StepSubmission
     public int AwardedPoints { get; set; }
     public string PayloadJson { get; set; } = "{}";
 
+    /// <summary>
+    /// The team that made this submission (competitive mode only; null for relaxed
+    /// or pre-Phase-3 submissions).
+    /// </summary>
+    public Guid? TeamId { get; set; }
+    public Team? Team { get; set; }
+
     public DateTime ClientCreatedAtUtc { get; set; }
     public DateTime ServerReceivedAtUtc { get; set; } = DateTime.UtcNow;
 }

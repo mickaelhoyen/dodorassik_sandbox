@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
 using Dodorassik.Api.Auth;
+using Dodorassik.Api.Hubs;
+using Dodorassik.Api.Services;
 using Dodorassik.Core.Abstractions;
 using Dodorassik.Infrastructure.Persistence;
 using Dodorassik.Infrastructure.Security;
@@ -25,6 +27,7 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? 
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+builder.Services.AddScoped<IAntiCheatService, AntiCheatService>();
 
 // Don't remap "sub" / "role" — we want the raw JWT claim names.
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
@@ -47,11 +50,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "sub",
             RoleClaimType = "role",
         };
+        // SignalR WebSocket connections pass the JWT in the query string because
+        // browsers (and Godot's WebSocketPeer) cannot set custom headers during
+        // the HTTP upgrade handshake.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) &&
+                    ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                {
+                    ctx.Token = token;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
 // -----------------------------------------------------------------------
 // CORS — explicit allowlist per environment, never AllowAnyOrigin in prod
+// AllowCredentials is required for SignalR WebSocket transport.
 // -----------------------------------------------------------------------
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
@@ -60,13 +80,13 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     {
         // Dev convenience only — refused if Environment != Development.
         p.WithOrigins("http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:5500")
-         .AllowAnyHeader().AllowAnyMethod();
+         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     }
     else
     {
         if (allowedOrigins.Length == 0)
             throw new InvalidOperationException("Cors:AllowedOrigins must be configured in non-Development environments.");
-        p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     }
 }));
 
@@ -110,10 +130,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // -----------------------------------------------------------------------
-// MVC + Razor Pages + Swagger
+// MVC + Razor Pages + SignalR + Swagger
 // -----------------------------------------------------------------------
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -138,6 +159,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapRazorPages();
+app.MapHub<CompetitiveHuntHub>("/hubs/competitive");
 
 app.Run();
 

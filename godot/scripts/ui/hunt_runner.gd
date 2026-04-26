@@ -13,6 +13,9 @@ extends "res://scripts/ui/base_screen.gd"
 var _hunt: Dictionary
 var _step_index: int = 0
 var _content: VBoxContainer
+var _is_competitive: bool = false
+var _start_time: float = 0.0
+var _timer_label: Label = null
 
 
 func build() -> void:
@@ -22,14 +25,46 @@ func build() -> void:
 		add_button("Retour", func() -> void: Router.go("player_home"))
 		return
 
+	_is_competitive = String(_hunt.get("mode", "")) == "competitive"
+
+	# Redirect to team selection if competitive and no team assigned yet.
+	if _is_competitive and AppState.active_team.is_empty() and AppState.is_authenticated():
+		Router.go("team_select", {"hunt": _hunt})
+		return
+
 	add_title(String(_hunt.get("name", "Chasse")))
+
+	if _is_competitive:
+		var team_name: String = String(AppState.active_team.get("name", "Mon équipe"))
+		add_subtitle("⚡ Mode compétitif — Équipe : %s" % team_name)
+
+		_timer_label = Label.new()
+		_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_timer_label.add_theme_font_size_override("font_size", 14)
+		add_node(_timer_label)
+		_start_time = Time.get_unix_time_from_system()
+
 	_content = VBoxContainer.new()
 	_content.add_theme_constant_override("separation", 8)
 	add_node(_content)
 
 	_render_step()
 	add_separator()
+
+	if _is_competitive:
+		add_button("🏆 Classement", func() -> void:
+			Router.go("leaderboard", {"hunt": _hunt}))
+
 	add_button("Quitter", func() -> void: Router.go("player_home"))
+
+
+func _process(delta: float) -> void:
+	if _timer_label == null:
+		return
+	var elapsed: float = Time.get_unix_time_from_system() - _start_time
+	var minutes: int = int(elapsed) / 60
+	var seconds: int = int(elapsed) % 60
+	_timer_label.text = "⏱ %02d:%02d" % [minutes, seconds]
 
 
 func _render_step() -> void:
@@ -39,10 +74,19 @@ func _render_step() -> void:
 	var steps: Array = _hunt.get("steps", [])
 	if _step_index >= steps.size():
 		var done := Label.new()
-		done.text = "🎉 Bravo ! Toutes les étapes sont terminées."
+		if _is_competitive:
+			done.text = "🎉 Terminé ! Consulte le classement."
+		else:
+			done.text = "🎉 Bravo ! Toutes les étapes sont terminées."
 		done.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		done.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_content.add_child(done)
+
+		if _is_competitive:
+			var lb_btn := Button.new()
+			lb_btn.text = "🏆 Voir le classement final"
+			lb_btn.pressed.connect(func() -> void: Router.go("leaderboard", {"hunt": _hunt}))
+			_content.add_child(lb_btn)
 		return
 
 	var step: Dictionary = steps[_step_index]
@@ -161,9 +205,20 @@ func _text_validator(step: Dictionary) -> Node:
 func _complete_step(step: Dictionary, payload: Dictionary) -> void:
 	var hunt_id := String(_hunt.get("id", ""))
 	var step_id := String(step.get("id", ""))
+
+	# Attach team id when playing in competitive mode.
+	var team_id: String = String(AppState.active_team.get("id", ""))
+
 	if AppState.online and not hunt_id.is_empty():
-		var resp: Dictionary = await ApiClient.submit_step(hunt_id, step_id, payload)
+		var resp: Dictionary = await ApiClient.submit_step(hunt_id, step_id, payload, team_id)
 		if not resp["ok"]:
+			var err: String = resp.get("error", "")
+			if err == "step_order_violation":
+				set_status("Anti-triche : une étape précédente n'a pas été validée.", true)
+				return
+			elif err == "gps_speed_implausible":
+				set_status("Anti-triche : déplacement trop rapide détecté.", true)
+				return
 			OfflineCache.queue_submission(hunt_id, step_id, payload)
 			set_status("Hors ligne — résultat mis en file d'attente.")
 	else:

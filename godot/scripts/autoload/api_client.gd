@@ -80,8 +80,11 @@ func delete_clue(hunt_id: String, clue_id: String) -> Dictionary:
 	return await request("DELETE", "/api/hunts/%s/clues/%s" % [hunt_id, clue_id])
 
 
-func submit_step(hunt_id: String, step_id: String, payload: Dictionary) -> Dictionary:
-	return await request("POST", "/api/hunts/%s/steps/%s/submit" % [hunt_id, step_id], payload)
+func submit_step(hunt_id: String, step_id: String, payload: Dictionary, team_id: String = "") -> Dictionary:
+	var body: Dictionary = {"payload": payload}
+	if not team_id.is_empty():
+		body["teamId"] = team_id
+	return await request("POST", "/api/hunts/%s/steps/%s/submit" % [hunt_id, step_id], body)
 
 
 func my_family() -> Dictionary:
@@ -94,6 +97,30 @@ func create_family(name: String) -> Dictionary:
 
 func join_family(family_id: String) -> Dictionary:
 	return await request("POST", "/api/families/%s/join" % family_id)
+
+
+# ---------- Teams ----------
+
+func list_teams(hunt_id: String) -> Dictionary:
+	return await request("GET", "/api/hunts/%s/teams" % hunt_id)
+
+
+func create_team(hunt_id: String, payload: Dictionary) -> Dictionary:
+	return await request("POST", "/api/hunts/%s/teams" % hunt_id, payload)
+
+
+func join_team(hunt_id: String, team_id: String) -> Dictionary:
+	return await request("POST", "/api/hunts/%s/teams/%s/join" % [hunt_id, team_id])
+
+
+func leave_team(hunt_id: String, team_id: String) -> Dictionary:
+	return await request("DELETE", "/api/hunts/%s/teams/%s/leave" % [hunt_id, team_id])
+
+
+# ---------- Leaderboard ----------
+
+func get_leaderboard(hunt_id: String) -> Dictionary:
+	return await request("GET", "/api/hunts/%s/leaderboard" % hunt_id)
 
 
 # ---------- Core request ----------

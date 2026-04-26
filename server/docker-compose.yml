@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dodorassik-postgres
+    environment:
+      POSTGRES_DB: dodorassik
+      POSTGRES_USER: dodorassik
+      POSTGRES_PASSWORD: dodorassik
+    ports:
+      - "5432:5432"
+    volumes:
+      - dodorassik-pg:/var/lib/postgresql/data
+
+volumes:
+  dodorassik-pg:

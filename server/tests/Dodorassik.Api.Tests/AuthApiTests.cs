@@ -94,6 +94,40 @@ public class AuthApiTests : IClassFixture<TestingWebAppFactory>
     }
 
     [Fact]
+    public async Task Register_with_creator_role_returns_creator_account()
+    {
+        var resp = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "newcreator@example.com",
+            password = "correcthorse42",
+            displayName = "New Creator",
+            role = "creator",
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await resp.Content.ReadFromJsonAsync<AuthBody>();
+        body!.User.Role.Should().Be("creator");
+    }
+
+    [Theory]
+    [InlineData("super_admin")]
+    [InlineData("SuperAdmin")]
+    [InlineData("admin")]
+    [InlineData("hacker")]
+    public async Task Register_refuses_to_self_assign_super_admin_or_unknown_role(string forbiddenRole)
+    {
+        var resp = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = $"{forbiddenRole}@example.com",
+            password = "correcthorse42",
+            displayName = "X",
+            role = forbiddenRole,
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Login_succeeds_with_correct_credentials()
     {
         await _client.PostAsJsonAsync("/api/auth/register", new

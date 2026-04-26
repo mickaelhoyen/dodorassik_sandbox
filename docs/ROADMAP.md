@@ -19,7 +19,11 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       rate limiting natif .NET 8, validation DTO complète, messages d'erreur
       anti-énumération, `MapInboundClaims = false`, claims rôle en snake_case.
 - [x] Endpoints RGPD : `GET/PATCH/DELETE /api/users/me`, export portabilité.
-- [x] Tests d'intégration `WebApplicationFactory` (Auth, Hunts, Users — InMemory).
+- [x] Tests d'intégration `WebApplicationFactory` (Auth, Hunts, Users,
+      **Families, Public, Hunts.Update PUT, Hunts.Create avec clues
+      dupliquées, signup creator, modération complète** — InMemory ;
+      voir `server/tests/Dodorassik.Api.Tests/README.md` pour la voie
+      Testcontainers Postgres).
 - [x] Migrations EF Core : scaffolding (`DesignTimeDbContextFactory`,
       `db/init.sql`, README de génération). Génération à lancer en local
       (`dotnet ef migrations add Initial`) puis commit.
@@ -35,9 +39,14 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       server-side des steps/clues avec conservation des ids.
 - [x] Build Android signé (debug) documenté avec presets d'export Godot 4.6,
       génération du keystore debug, install ADB, filtrage logcat.
-- [ ] Implémentation native du plugin Android vérifiée sur appareil réel
-      (GPS, caméra, Bluetooth). Structure Java compilable avec Gradle,
-      reste à tester sur appareil physique.
+- [x] Implémentation native du plugin Android : `LocationModule`
+      (FusedLocationProviderClient, one-shot, timeout 5 s),
+      `CameraModule` (ACTION_IMAGE_CAPTURE + FileProvider, signal
+      `photo_captured`), `BluetoothModule` (BluetoothLeScanner avec
+      ScanFilter par MAC, signal `bluetooth_device_found`). Build Gradle
+      complet (`build.gradle`, `settings.gradle`, `consumer-rules.pro`,
+      ressource `dodorassik_file_paths.xml`). Reste à valider sur
+      appareil physique.
 
 ## Phase 3 — Multi-joueur & compétition
 
@@ -50,7 +59,11 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 
 - [ ] Éditeur de carte intégré (placer des points, dessiner un parcours)
 - [ ] Bibliothèque d'assets/énigmes partagée
-- [ ] Validation par le super-admin avant publication publique
+- [x] **Validation par le super-admin avant publication publique** :
+      workflow `Draft → Submitted → Published / Rejected`, `AdminHuntsController`
+      (queue, approve, reject avec raison, takedown), endpoints
+      `/api/hunts/{id}/submit-for-review`, `/withdraw`, `/archive`,
+      verrou d'édition sur Submitted/Published.
 - [ ] Marketplace de parcours (gratuit / payant)
 - [ ] Internationalisation (FR/EN au minimum)
 

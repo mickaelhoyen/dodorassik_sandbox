@@ -1,6 +1,7 @@
 package com.dodorassik.device;
 
 import android.app.Activity;
+import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import org.godotengine.godot.Godot;
@@ -54,8 +55,15 @@ public class DodorassikDevice extends GodotPlugin {
     public Set<SignalInfo> getPluginSignals() {
         Set<SignalInfo> signals = new HashSet<>();
         signals.add(new SignalInfo("location_updated", Double.class, Double.class, Double.class));
+        signals.add(new SignalInfo("photo_captured", String.class, Long.class));
         signals.add(new SignalInfo("bluetooth_device_found", String.class, String.class, Integer.class));
         return signals;
+    }
+
+    @Override
+    public void onMainActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onMainActivityResult(requestCode, resultCode, data);
+        camera.handleActivityResult(requestCode, resultCode, data);
     }
 
     // ---------- GDScript entry points ----------
@@ -76,10 +84,14 @@ public class DodorassikDevice extends GodotPlugin {
         return bluetooth.scan(whitelist, (long) (timeoutSeconds * 1000));
     }
 
-    // ---------- Internal helpers ----------
+    // ---------- Internal helpers (called by modules) ----------
 
     void emitLocation(double lat, double lon, double accuracy) {
         emitSignal("location_updated", lat, lon, accuracy);
+    }
+
+    void emitPhotoCaptured(String absolutePath, long sizeBytes) {
+        emitSignal("photo_captured", absolutePath, sizeBytes);
     }
 
     void emitBluetoothDevice(String name, String address, int rssi) {

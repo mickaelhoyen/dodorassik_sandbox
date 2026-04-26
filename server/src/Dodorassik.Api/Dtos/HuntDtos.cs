@@ -16,6 +16,9 @@ public record HuntDto(
     string? LocationLabel,
     DateTime? EventStartUtc,
     DateTime? EventEndUtc,
+    DateTime? SubmittedAtUtc,
+    DateTime? ReviewedAtUtc,
+    string? RejectionReason,
     List<HuntStepDto> Steps,
     List<ClueDto> Clues);
 
@@ -105,6 +108,9 @@ public static class HuntMappings
         h.LocationLabel,
         h.EventStartUtc,
         h.EventEndUtc,
+        h.SubmittedAtUtc,
+        h.ReviewedAtUtc,
+        h.RejectionReason,
         h.Steps
             .OrderBy(s => s.Order)
             .Select(s => s.ToDto())

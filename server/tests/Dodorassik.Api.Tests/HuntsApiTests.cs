@@ -67,6 +67,136 @@ public class HuntsApiTests : IClassFixture<TestingWebAppFactory>
     }
 
     [Fact]
+    public async Task Create_rejects_duplicate_clue_codes()
+    {
+        var client = _factory.CreateClient();
+        var (_, token) = await RegisterUser(client, "dup-clue@example.com", role: UserRole.Creator);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var resp = await client.PostAsJsonAsync("/api/hunts", new
+        {
+            name = "Dup",
+            steps = new[] { new { title = "s", type = "manual" } },
+            clues = new[]
+            {
+                new { code = "K3-42", title = "A", reveal = "" },
+                new { code = "k3-42", title = "B", reveal = "" }, // case-insensitive duplicate
+            },
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Create_rejects_too_many_clues()
+    {
+        var client = _factory.CreateClient();
+        var (_, token) = await RegisterUser(client, "many-clues@example.com", role: UserRole.Creator);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var clues = Enumerable.Range(0, 250).Select(i => new { code = $"K{i}", title = "", reveal = "" }).ToArray();
+        var resp = await client.PostAsJsonAsync("/api/hunts", new { name = "Many", clues });
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Update_replaces_steps_and_removes_orphans()
+    {
+        var client = _factory.CreateClient();
+        var (_, token) = await RegisterUser(client, "putter@example.com", role: UserRole.Creator);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var create = await client.PostAsJsonAsync("/api/hunts", new
+        {
+            name = "Original",
+            steps = new[]
+            {
+                new { title = "s1", type = "manual" },
+                new { title = "s2", type = "manual" },
+            },
+        });
+        var hunt = await create.Content.ReadFromJsonAsync<HuntBody>();
+        var firstStepId = hunt!.Steps[0].Id;
+
+        // Replace: keep first step (by id), drop second, add a new third.
+        var put = await client.PutAsJsonAsync($"/api/hunts/{hunt.Id}", new
+        {
+            name = "Renamed",
+            steps = new object[]
+            {
+                new { id = firstStepId, title = "s1 renamed", type = "manual" },
+                new { title = "brand-new", type = "manual" },
+            },
+            clues = Array.Empty<object>(),
+        });
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var refreshed = await client.GetFromJsonAsync<HuntBody>($"/api/hunts/{hunt.Id}");
+        refreshed!.Name.Should().Be("Renamed");
+        refreshed.Steps.Should().HaveCount(2);
+        refreshed.Steps.Should().Contain(s => s.Id == firstStepId && s.Title == "s1 renamed");
+        refreshed.Steps.Should().NotContain(s => s.Title == "s2");
+        refreshed.Steps.Should().Contain(s => s.Title == "brand-new");
+    }
+
+    [Fact]
+    public async Task Update_forbidden_for_other_creators()
+    {
+        var clientA = _factory.CreateClient();
+        var (_, tokenA) = await RegisterUser(clientA, "ownerA@example.com", role: UserRole.Creator);
+        clientA.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        var create = await clientA.PostAsJsonAsync("/api/hunts", new { name = "A's", steps = new[] { new { title = "x", type = "manual" } } });
+        var hunt = await create.Content.ReadFromJsonAsync<HuntBody>();
+
+        var clientB = _factory.CreateClient();
+        var (_, tokenB) = await RegisterUser(clientB, "ownerB@example.com", role: UserRole.Creator);
+        clientB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
+
+        var hijack = await clientB.PutAsJsonAsync($"/api/hunts/{hunt!.Id}", new
+        {
+            name = "stolen", steps = Array.Empty<object>(), clues = Array.Empty<object>(),
+        });
+        hijack.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Add_clue_rejects_duplicate_codes()
+    {
+        var client = _factory.CreateClient();
+        var (_, token) = await RegisterUser(client, "clueadder@example.com", role: UserRole.Creator);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var create = await client.PostAsJsonAsync("/api/hunts", new
+        {
+            name = "Clue host",
+            steps = new[] { new { title = "s", type = "manual" } },
+            clues = new[] { new { code = "ABC", title = "", reveal = "" } },
+        });
+        var hunt = await create.Content.ReadFromJsonAsync<HuntBody>();
+
+        var dup = await client.PostAsJsonAsync($"/api/hunts/{hunt!.Id}/clues", new
+        {
+            code = "abc", title = "Other", reveal = "Z", points = 1,
+        });
+        dup.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task List_with_mine_filter_returns_own_drafts()
+    {
+        var client = _factory.CreateClient();
+        var (_, token) = await RegisterUser(client, "mine@example.com", role: UserRole.Creator);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        await client.PostAsJsonAsync("/api/hunts", new { name = "Draft mine", steps = new[] { new { title = "s", type = "manual" } } });
+
+        var anonResp = await _factory.CreateClient().GetFromJsonAsync<List<HuntBody>>("/api/hunts");
+        anonResp.Should().NotContain(h => h.Name == "Draft mine"); // Drafts hidden from public.
+
+        var mineResp = await client.GetFromJsonAsync<List<HuntBody>>("/api/hunts?mine=true");
+        mineResp.Should().Contain(h => h.Name == "Draft mine");
+    }
+
+    [Fact]
     public async Task Create_rejects_oversized_steps_array()
     {
         var client = _factory.CreateClient();
@@ -114,4 +244,6 @@ public class HuntsApiTests : IClassFixture<TestingWebAppFactory>
 
     private record AuthBody(string Token, UserBody User);
     private record UserBody(Guid Id, string Email, string DisplayName, string Role);
+    private record HuntBody(Guid Id, string Name, string Status, List<StepBody> Steps);
+    private record StepBody(Guid Id, string Title, string Type);
 }

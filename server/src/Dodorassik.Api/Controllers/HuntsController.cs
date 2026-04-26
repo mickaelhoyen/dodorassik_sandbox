@@ -20,12 +20,33 @@ public class HuntsController : ControllerBase
 
     public HuntsController(AppDbContext db) => _db = db;
 
+    /// <summary>
+    /// Lists hunts. By default, anonymous callers see only published hunts.
+    /// Authenticated creators get their own hunts (any status) by passing
+    /// <c>?mine=true</c>; super-admins see everything.
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<List<HuntDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<List<HuntDto>>> List([FromQuery] string? status, [FromQuery] bool mine = false)
     {
         var query = _db.Hunts.Include(h => h.Steps).Include(h => h.Clues).AsQueryable();
-        if (string.Equals(status, "published", StringComparison.OrdinalIgnoreCase))
+
+        if (mine)
+        {
+            var uid = CurrentUserId();
+            if (uid is null) return Unauthorized();
+            query = query.Where(h => h.CreatorId == uid.Value);
+        }
+        else if (User.IsInRole("super_admin"))
+        {
+            // Super-admins can additionally filter by ?status=submitted etc.
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<HuntStatus>(status, true, out var st))
+                query = query.Where(h => h.Status == st);
+        }
+        else
+        {
+            // Anonymous + non-creator authenticated callers: only published.
             query = query.Where(h => h.Status == HuntStatus.Published);
+        }
 
         var hunts = await query.OrderByDescending(h => h.UpdatedAtUtc).ToListAsync();
         return hunts.Select(h => h.ToDto()).ToList();
@@ -137,6 +158,11 @@ public class HuntsController : ControllerBase
         if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
             return Forbid();
 
+        // Editing a Submitted or Published hunt would silently bypass
+        // moderation. Force the creator to withdraw / unpublish first.
+        if (hunt.Status is HuntStatus.Submitted or HuntStatus.Published && !User.IsInRole("super_admin"))
+            return Conflict(new { error = "hunt_locked", status = hunt.Status.ToString().ToLowerInvariant() });
+
         hunt.Name = req.Name.Trim();
         hunt.Description = req.Description ?? string.Empty;
         hunt.Mode = HuntMappings.ParseHuntMode(req.Mode);
@@ -234,13 +260,83 @@ public class HuntsController : ControllerBase
         return hunt.ToDto();
     }
 
-    [HttpPost("{id:guid}/publish")]
+    /// <summary>
+    /// Creator submits a draft for super-admin review. The hunt becomes
+    /// invisible to editing until either approved (Published) or rejected
+    /// (back to Draft via /withdraw, optionally re-submit after fixing).
+    /// </summary>
+    [HttpPost("{id:guid}/submit-for-review")]
     [Authorize(Roles = "creator,super_admin")]
-    public async Task<IActionResult> Publish(Guid id)
+    public async Task<IActionResult> SubmitForReview(Guid id)
     {
+        var creatorId = CurrentUserId();
+        if (creatorId is null) return Unauthorized();
+
+        var hunt = await _db.Hunts
+            .Include(h => h.Steps)
+            .FirstOrDefaultAsync(h => h.Id == id);
+        if (hunt is null) return NotFound();
+        if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
+            return Forbid();
+
+        if (hunt.Status is not (HuntStatus.Draft or HuntStatus.Rejected))
+            return Conflict(new { error = "invalid_status_transition", current = hunt.Status.ToString().ToLowerInvariant() });
+
+        if (hunt.Steps.Count == 0)
+            return BadRequest(new { error = "hunt_has_no_steps" });
+
+        hunt.Status = HuntStatus.Submitted;
+        hunt.SubmittedAtUtc = DateTime.UtcNow;
+        hunt.RejectionReason = null;
+        hunt.UpdatedAtUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Creator pulls a submitted hunt back to draft (e.g. to fix a typo
+    /// before the admin reviews it). Allowed only while still Submitted.
+    /// </summary>
+    [HttpPost("{id:guid}/withdraw")]
+    [Authorize(Roles = "creator,super_admin")]
+    public async Task<IActionResult> Withdraw(Guid id)
+    {
+        var creatorId = CurrentUserId();
+        if (creatorId is null) return Unauthorized();
+
         var hunt = await _db.Hunts.FindAsync(id);
         if (hunt is null) return NotFound();
-        hunt.Status = HuntStatus.Published;
+        if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
+            return Forbid();
+        if (hunt.Status != HuntStatus.Submitted)
+            return Conflict(new { error = "invalid_status_transition", current = hunt.Status.ToString().ToLowerInvariant() });
+
+        hunt.Status = HuntStatus.Draft;
+        hunt.SubmittedAtUtc = null;
+        hunt.UpdatedAtUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Creator removes a published hunt from the public catalogue. Existing
+    /// scores remain — anonymising users is the GDPR endpoint's job.
+    /// </summary>
+    [HttpPost("{id:guid}/archive")]
+    [Authorize(Roles = "creator,super_admin")]
+    public async Task<IActionResult> Archive(Guid id)
+    {
+        var creatorId = CurrentUserId();
+        if (creatorId is null) return Unauthorized();
+
+        var hunt = await _db.Hunts.FindAsync(id);
+        if (hunt is null) return NotFound();
+        if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
+            return Forbid();
+        if (hunt.Status != HuntStatus.Published)
+            return Conflict(new { error = "invalid_status_transition", current = hunt.Status.ToString().ToLowerInvariant() });
+
+        hunt.Status = HuntStatus.Archived;
         hunt.UpdatedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return NoContent();
@@ -261,6 +357,8 @@ public class HuntsController : ControllerBase
         if (hunt is null) return NotFound();
         if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
             return Forbid();
+        if (hunt.Status is HuntStatus.Submitted or HuntStatus.Published && !User.IsInRole("super_admin"))
+            return Conflict(new { error = "hunt_locked", status = hunt.Status.ToString().ToLowerInvariant() });
         if (hunt.Clues.Count >= InputLimits.CluesPerHuntMax)
             return BadRequest(new { error = "too_many_clues" });
 
@@ -293,6 +391,8 @@ public class HuntsController : ControllerBase
         if (hunt is null) return NotFound();
         if (hunt.CreatorId != creatorId.Value && !User.IsInRole("super_admin"))
             return Forbid();
+        if (hunt.Status is HuntStatus.Submitted or HuntStatus.Published && !User.IsInRole("super_admin"))
+            return Conflict(new { error = "hunt_locked", status = hunt.Status.ToString().ToLowerInvariant() });
 
         var clue = await _db.Clues.FirstOrDefaultAsync(c => c.Id == clueId && c.HuntId == huntId);
         if (clue is null) return NotFound();

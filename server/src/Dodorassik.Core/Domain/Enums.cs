@@ -24,9 +24,16 @@ public enum StepType
 
 public enum HuntStatus
 {
+    /// <summary>Creator is still editing.</summary>
     Draft = 0,
+    /// <summary>Approved by a super-admin and visible publicly.</summary>
     Published = 1,
-    Archived = 2
+    /// <summary>Removed from listings by the creator.</summary>
+    Archived = 2,
+    /// <summary>Creator submitted for super-admin review (moderation queue).</summary>
+    Submitted = 3,
+    /// <summary>Super-admin rejected. <see cref="Hunt.RejectionReason"/> explains why.</summary>
+    Rejected = 4,
 }
 
 public enum HuntMode

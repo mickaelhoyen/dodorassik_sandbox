@@ -23,6 +23,12 @@ func build() -> void:
 	add_node(_password)
 
 	add_button("Se connecter", _on_login)
+	add_separator()
+	add_button("Créer un compte", func() -> void:
+		Router.go("signup", {
+			"target_role": int(route_args.get("target_role", AppState.Role.NONE)),
+			"back_to": "login",
+		}))
 	add_button("Retour", func() -> void: Router.go("role_selection"))
 
 

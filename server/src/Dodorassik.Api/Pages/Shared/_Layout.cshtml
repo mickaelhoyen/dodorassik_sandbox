@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Dodorassik</title>
+    <link rel="stylesheet" href="~/css/dodorassik.css" />
+</head>
+<body>
+    <header class="site-header">
+        <a href="/" class="brand">🗺️ Dodorassik</a>
+        <nav>
+            <a href="/">Chasses &amp; Événements</a>
+            <a href="/Signup">Créer un compte</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <p>Dodorassik — chasse au trésor familiale &bull; Hébergement UE &bull;
+           <a href="/api/swagger">API</a></p>
+    </footer>
+</body>
+</html>

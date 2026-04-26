@@ -13,6 +13,143 @@
 
 ---
 
+## 2026-04-26 — Inscription créateur Godot + interface web publique
+
+**Branche** : `claude/add-creator-signup-TuwbZ`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Erreur PostgreSQL "le rôle dodorassik n'est pas autorisé à se connecter"
+> (SqlState 28000).
+> Ajoutes la possibilité de créer un compte directement depuis l'application
+> Godot : en tant que créateur. Les comptes joueur ne nécessitent pas de
+> création obligatoire mais il faut pouvoir prévoir l'enregistrement de la
+> session actuelle et donc la création d'un compte à tout moment.
+> L'application API côté serveur doit être accompagnée d'une interface web
+> client pour pouvoir créer son compte sur le site web. Côté serveur une page
+> publique indique les événements/chasses du moment en cours ainsi que les
+> chasses permanentes (exemple : sentier).
+
+### Analyse
+
+**Erreur DB 28000** : le rôle PostgreSQL `dodorassik` n'a pas le droit LOGIN.
+Causes probables : volume Docker persistant d'une instance créée via
+`CREATE ROLE` sans `LOGIN`. Le `docker-compose.yml` existant utilise
+`POSTGRES_USER: dodorassik` (LOGIN inclus par défaut). Fix : supprimer le
+volume et relancer (`docker compose down -v && docker compose up -d`).
+Aucun changement de code nécessaire — la config est déjà correcte.
+
+**Inscription créateur depuis Godot** : l'endpoint `POST /api/auth/register`
+existant créait toujours un compte Player. Ajout d'un champ `Role?` optionnel
+dans `RegisterRequest`, acceptant `"player"` ou `"creator"` uniquement
+(SuperAdmin non auto-assignable). `AuthController.Register` valide la valeur
+avant création. Le nouvel écran `signup_screen.gd` gère l'inscription avec
+validation locale (longueur, email basique, confirmation password) puis
+auto-login sur réponse 200.
+
+**Sauvegarde session joueur** : un joueur non connecté voit désormais le
+bouton "Créer un compte / Sauvegarder ma session" dans `player_home`, qui
+mène vers `signup_screen` avec `target_role = PLAYER`. Cela respecte
+l'invariant Privacy §1 (pas de compte enfant forcé — c'est optionnel et
+initié par l'adulte).
+
+**Interface web publique** (Razor Pages intégrées dans `Dodorassik.Api`) :
+- `Program.cs` : ajout `AddRazorPages()` + `MapRazorPages()` + `UseStaticFiles()`.
+- `Pages/Index.cshtml` : page publique listant les événements en cours et
+  les parcours permanents, requête EF Core directe (même processus, pas de
+  HTTPClient redondant).
+- `Pages/Signup.cshtml` : formulaire d'inscription web avec les mêmes
+  contraintes que l'API (PBKDF2, validation DTO, pas de SuperAdmin).
+- `GET /api/public/hunts` : endpoint JSON dédié sans auth, filtrable par
+  `?category=event|permanent`, visible par Godot et le web.
+
+**HuntCategory** : nouvel enum `Permanent` (0) / `Event` (1) sur `Hunt`,
+avec `EventStartUtc` / `EventEndUtc` nullable pour les événements bornés.
+Migration SQL fournie dans `db/migrate_add_hunt_category.sql` (idempotent).
+
+Alternatives rejetées :
+- Réutiliser `HuntMode` pour distinguer permanent/événement → trop ambigu,
+  `Mode` concerne le scoring, pas la nature du parcours.
+- Page Blazor séparée pour le web → overkill phase 5, Razor Pages dans le
+  même projet suffit.
+- Appel HTTP interne depuis Razor Pages vers l'API → redondance inutile
+  quand les services sont dans le même processus.
+
+### Modifications
+
+#### Backend
+
+- **server/src/Dodorassik.Core/Domain/Enums.cs** — Ajout `HuntCategory`.
+- **server/src/Dodorassik.Core/Domain/Hunt.cs** — Champs `Category`,
+  `EventStartUtc`, `EventEndUtc`.
+- **server/src/Dodorassik.Api/Dtos/AuthDtos.cs** — `RegisterRequest.Role?`
+  optionnel.
+- **server/src/Dodorassik.Api/Controllers/AuthController.cs** — Validation
+  du rôle demandé (player|creator uniquement).
+- **server/src/Dodorassik.Api/Dtos/HuntDtos.cs** — `HuntDto` étendu avec
+  `Category`, `LocationLabel`, `EventStartUtc`, `EventEndUtc` ; mapping
+  `ParseHuntCategory` ; `CreateHuntRequest` étendu.
+- **server/src/Dodorassik.Api/Controllers/HuntsController.cs** — Utilise
+  les nouveaux champs dans `Create`.
+- **server/src/Dodorassik.Api/Controllers/PublicController.cs** *(nouveau)* —
+  `GET /api/public/hunts` sans auth, répond `PublicHuntsResponse`.
+- **server/src/Dodorassik.Api/Program.cs** — `AddRazorPages`, `MapRazorPages`,
+  `UseStaticFiles`.
+- **server/src/Dodorassik.Api/Pages/_ViewImports.cshtml** *(nouveau)*
+- **server/src/Dodorassik.Api/Pages/_ViewStart.cshtml** *(nouveau)*
+- **server/src/Dodorassik.Api/Pages/Shared/_Layout.cshtml** *(nouveau)*
+- **server/src/Dodorassik.Api/Pages/Index.cshtml** + `Index.cshtml.cs` *(nouveaux)*
+- **server/src/Dodorassik.Api/Pages/Signup.cshtml** + `Signup.cshtml.cs` *(nouveaux)*
+- **server/src/Dodorassik.Api/wwwroot/css/dodorassik.css** *(nouveau)* —
+  styles minimaux sans dépendance externe.
+- **server/db/init.sql** — Nouvelles colonnes dans `Hunts`.
+- **server/db/migrate_add_hunt_category.sql** *(nouveau)* — Migration
+  idempotente pour bases existantes.
+
+#### Godot
+
+- **godot/scripts/autoload/api_client.gd** — `register()` accepte un
+  paramètre `role` (défaut `"player"`).
+- **godot/scripts/ui/signup_screen.gd** *(nouveau)* — Formulaire d'inscription
+  complet avec validation locale et auto-login post-création.
+- **godot/scripts/ui/login_screen.gd** — Bouton "Créer un compte" renvoyant
+  vers `signup` avec `target_role` hérité.
+- **godot/scripts/ui/player_home.gd** — Bouton "Créer un compte / Sauvegarder
+  ma session" affiché si non authentifié.
+- **godot/scripts/autoload/router.gd** — Route `"signup"` ajoutée.
+
+#### Documentation
+
+- **docs/ROADMAP.md** — Phase 5 : items livrés cochés.
+- **docs/CLAUDE-LOG.md** — Cette entrée.
+
+### Security & Privacy review
+
+- **Pas de nouvelle PII enfant** introduite. L'inscription reste réservée aux
+  adultes ; aucun champ identifiant d'enfant n'existe dans les formulaires.
+- **Rôle SuperAdmin non auto-assignable** : la validation `"player" or "creator"`
+  côté API et le formulaire web excluent explicitement `super_admin`.
+- **Mêmes invariants de sécurité** pour la page Signup web que l'API : PBKDF2
+  (via `IPasswordHasher` injecté), même `InputLimits`, pas de logging du
+  mot de passe, pas de fuite "email déjà pris" dans un timing différent
+  (note : la page Razor retourne "adresse déjà utilisée" — acceptable car
+  le RGPD exige de prévenir l'utilisateur d'une tentative sur son compte).
+- **Page publique** : aucune donnée utilisateur ni token dans les réponses
+  `/api/public/hunts` et `/` — seulement noms, descriptions, coordonnées
+  de *lieux* (étapes de parcours), conformes à la règle GPS §2 de CLAUDE.md.
+- **Rate limiting** : la page Signup web bénéficie du limiteur global
+  (60 req/min par IP). Le formulaire ne bypasse pas le limiteur de l'endpoint
+  API car il passe par le PageModel (même process). Pour une protection
+  équivalente au rate limiter `auth-register`, ajouter un middleware dédié
+  aux routes Razor en v2.
+- **CSS en local** : aucun CDN externe, aucune requête tiers, conforme à
+  l'invariant Privacy §4 (pas de tiers analytics).
+- **CORS** : les Razor Pages ne sont pas concernées par la politique CORS
+  (rendered server-side, pas d'appel fetch cross-origin).
+
+---
+
 ## 2026-04-26 — Phase 2 + cadre security/privacy
 
 **Branche** : `claude/godot-family-game-7x9Ki`

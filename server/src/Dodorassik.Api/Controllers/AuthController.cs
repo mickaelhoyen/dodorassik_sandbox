@@ -34,6 +34,12 @@ public class AuthController : ControllerBase
 
         var email = req.Email.Trim().ToLowerInvariant();
 
+        // SuperAdmin cannot self-register — must be promoted by another SuperAdmin.
+        var requestedRoleStr = (req.Role ?? "player").Trim().ToLowerInvariant();
+        if (requestedRoleStr is not ("player" or "creator"))
+            return BadRequest(new { error = "invalid_role" });
+        var requestedRole = requestedRoleStr == "creator" ? UserRole.Creator : UserRole.Player;
+
         // Don't disclose whether the email exists: same delay regardless.
         var exists = await _db.Users.AnyAsync(u => u.Email == email);
         if (exists)
@@ -47,7 +53,7 @@ public class AuthController : ControllerBase
             Email = email,
             DisplayName = req.DisplayName.Trim(),
             PasswordHash = _hasher.Hash(req.Password),
-            Role = UserRole.Player,
+            Role = requestedRole,
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();

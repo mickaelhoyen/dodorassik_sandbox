@@ -60,6 +60,8 @@ func _build_screen(name: String, args: Dictionary) -> Control:
 			script = load("res://scripts/ui/player_home.gd")
 		"hunt_runner":
 			script = load("res://scripts/ui/hunt_runner.gd")
+		"signup":
+			script = load("res://scripts/ui/signup_screen.gd")
 		_:
 			return null
 	var screen: Control = script.new()

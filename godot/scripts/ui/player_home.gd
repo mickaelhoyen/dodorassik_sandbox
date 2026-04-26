@@ -23,6 +23,12 @@ func build() -> void:
 			set_status("%d envoyés." % sent))
 
 	add_separator()
+	if not AppState.is_authenticated():
+		add_button("Créer un compte / Sauvegarder ma session",
+			func() -> void: Router.go("signup", {
+				"target_role": AppState.Role.PLAYER,
+				"back_to": "player_home",
+			}))
 	add_button("Retour", func() -> void: Router.go("role_selection"))
 
 

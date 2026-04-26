@@ -11,7 +11,11 @@ public record HuntDto(
     string Description,
     string Status,
     string Mode,
+    string Category,
     Guid CreatorId,
+    string? LocationLabel,
+    DateTime? EventStartUtc,
+    DateTime? EventEndUtc,
     List<HuntStepDto> Steps);
 
 public record HuntStepDto(
@@ -30,6 +34,11 @@ public record CreateHuntRequest(
     [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
     string? Description,
     string? Mode,
+    // "permanent" (default) or "event"
+    string? Category,
+    string? LocationLabel,
+    DateTime? EventStartUtc,
+    DateTime? EventEndUtc,
     [property: MaxLength(InputLimits.StepsPerHuntMax)]
     List<CreateHuntStepRequest>? Steps);
 
@@ -58,7 +67,11 @@ public static class HuntMappings
         h.Description,
         h.Status.ToString().ToLowerInvariant(),
         h.Mode.ToString().ToLowerInvariant(),
+        h.Category.ToString().ToLowerInvariant(),
         h.CreatorId,
+        h.LocationLabel,
+        h.EventStartUtc,
+        h.EventEndUtc,
         h.Steps
             .OrderBy(s => s.Order)
             .Select(s => s.ToDto())
@@ -99,5 +112,11 @@ public static class HuntMappings
     {
         "competitive" => HuntMode.Competitive,
         _ => HuntMode.Relaxed,
+    };
+
+    public static HuntCategory ParseHuntCategory(string? raw) => (raw ?? "").ToLowerInvariant() switch
+    {
+        "event" => HuntCategory.Event,
+        _ => HuntCategory.Permanent,
     };
 }

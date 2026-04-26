@@ -18,6 +18,11 @@ public class Hunt
 
     public HuntStatus Status { get; set; } = HuntStatus.Draft;
     public HuntMode Mode { get; set; } = HuntMode.Relaxed;
+    public HuntCategory Category { get; set; } = HuntCategory.Permanent;
+
+    // Non-null only when Category == HuntCategory.Event.
+    public DateTime? EventStartUtc { get; set; }
+    public DateTime? EventEndUtc { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;

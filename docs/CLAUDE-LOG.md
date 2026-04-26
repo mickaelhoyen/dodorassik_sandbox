@@ -13,6 +13,70 @@
 
 ---
 
+## 2026-04-26 — Phase 5 : CI/CD, Docker, statistiques d'usage, console super-admin web
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Continues sur la phase suivante.
+
+### Analyse
+
+Phase 5 — Plateforme — avait 4 items restants :
+
+1. **Console super-admin web** : Blazor était une option citée dans le ROADMAP
+   mais ajouter un projet Blazor Server séparé représente une dépendance lourde.
+   Choix retenu : SPA vanilla JS/HTML servie par le même serveur ASP.NET Core
+   comme fichier statique (`wwwroot/admin/index.html`). Avantages : zéro
+   dépendance, même domaine (pas de CORS additionnel), même JWT Bearer déjà
+   implémenté. Inconvénient : pas de Server-Side Rendering, mais les données
+   admin ne sont pas indexées donc SEO irrelevant.
+
+2. **Statistiques d'usage** : nouvel endpoint `GET /api/admin/stats` protégé
+   `super_admin`. Pas de table d'agrégats dédiée — calcul en temps réel sur
+   les données existantes (acceptable pour un usage admin, volume attendu faible).
+
+3. **CI/CD GitHub Actions** : deux workflows indépendants déclenchés par path
+   (`server/**` et `godot/**`). Le workflow Godot ne réalise l'export APK que
+   sur `main` (import+validation sur toutes les branches).
+
+4. **Docker** : multi-stage Dockerfile standard .NET 8. Le `docker-compose.yml`
+   existant avait uniquement postgres ; il est enrichi avec le service `api`.
+   Les secrets sont portés par variables d'environnement pour respecter
+   l'invariant #1 de CLAUDE.md (pas de secret en clair dans le repo).
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `.github/workflows/ci-server.yml` | Créé — CI .NET build + test + audit |
+| `.github/workflows/ci-godot.yml` | Créé — import headless + export APK (main only) |
+| `server/Dockerfile` | Créé — multi-stage sdk:8.0 → aspnet:8.0 |
+| `server/.dockerignore` | Créé — exclusions bin/obj/tests |
+| `server/docker-compose.yml` | Modifié — ajout service api + healthcheck postgres |
+| `server/src/Dodorassik.Api/Dtos/StatsDtos.cs` | Créé — UsageStatsDto, PopularHuntDto |
+| `server/src/Dodorassik.Api/Controllers/StatsController.cs` | Créé — GET /api/admin/stats |
+| `server/src/Dodorassik.Api/wwwroot/admin/index.html` | Créé — console SPA (login, stats, modération) |
+| `docs/ROADMAP.md` | Phase 5 items cochés |
+
+### Security & Privacy review
+
+- `StatsController` : `[Authorize(Roles = "super_admin")]` — aucune donnée PII
+  exposée (familles = entités anonymes, comptes = counts, pas de noms/emails).
+- `wwwroot/admin/index.html` : JWT stocké en `sessionStorage` (fermé à la
+  fermeture de l'onglet), jamais en `localStorage`. XSS mitigé par la fonction
+  `esc()` sur toutes les valeurs affichées.
+- Docker : `JWT_SECRET` et `POSTGRES_PASSWORD` sont des variables d'environnement,
+  non commités. La valeur par défaut dans `docker-compose.yml` est `REPLACE_ME…`
+  pour les secrets JWT, ce qui évite un démarrage silencieux avec un secret faible.
+- CI : aucun secret dans les workflows ; l'audit `dotnet list package --vulnerable`
+  est systématique.
+- Aucune PII nouvelle. Logs inchangés.
+
+---
+
 ## 2026-04-26 — Phase 4 : internationalisation FR/EN, bibliothèque d'étapes, modération super-admin
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

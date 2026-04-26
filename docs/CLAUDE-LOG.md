@@ -150,7 +150,107 @@ Alternatives rejetées :
 
 ---
 
-## 2026-04-26 — Phase 2 + cadre security/privacy
+## 2026-04-26 — Phase 2 : éditeur de chasse complet (steps + clues) + build Android
+
+**Branche** : `claude/implement-phase-2-VulAm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Réanalyses la solution et analyses ensuite docs/ROADMAP.md et implémente la
+> suite (phase 2).
+
+### Analyse
+
+Re-lecture complète de la solution (16 fichiers backend, 12 scripts GDScript,
+plugin Android, tests). Les items Phase 2 déjà cochés sont stables. Les trois
+items restants :
+
+1. **Éditeur Godot avec steps + clues** : `hunt_editor.gd` ajoutait des steps
+   round-robin sans formulaire d'édition, et ne gérait pas du tout les clues
+   physiques. La refonte complète était nécessaire.
+2. **Build Android signé documenté** : le README du plugin listait les pré-requis
+   mais manquait le wiring Gradle, la génération keystore, l'export preset et
+   l'install ADB.
+3. **Plugin Android natif** : structure Java déjà présente, non compilable
+   (manque `build.gradle`). Ajout des instructions de build ; test sur appareil
+   physique reste hors sandbox.
+
+Choix notables :
+
+- **PUT full-replace** pour les mises à jour de chasse : semantique plus simple
+  que des PATCH partiels au stade MVP. L'upsert côté serveur (match par Id si
+  présent, sinon création) permet au client de conserver les ids après le
+  premier save et de ne pas recréer les entités à chaque sauvegarde.
+- **Normalisation des codes de clue en MAJUSCULES** côté serveur et côté
+  éditeur Godot : évite les doublons insensibles à la casse et simplifie la
+  comparaison en jeu.
+- **`publish_hunt` ajouté à `api_client.gd`** en même temps que les helpers
+  clue/update, pour compléter la couverture des endpoints existants.
+- **`ClueDto` inclus dans `HuntDto`** et dans la réponse de `List` : le listing
+  des chasses du créateur affiche maintenant les infos complètes sans second
+  appel. Coût réseau négligeable pour la taille attendue des chasses familiales.
+- **Params type-spécifiques dans l'éditeur** : formulaires inline plutôt que
+  dialogs modaux pour rester dans le paradigme `base_screen.gd`. Un step de type
+  `location` affiche lat/lon/rayon, `text_answer`/`clue_collect` affiche
+  "réponse attendue", `bluetooth` affiche la liste des adresses MAC.
+
+### Modifications
+
+#### Backend
+
+- **server/src/Dodorassik.Api/Validation/InputLimits.cs** — Ajout des
+  constantes clue : `ClueCodeMaxLength`, `ClueTitleMaxLength`,
+  `ClueRevealMaxLength`, `CluesPerHuntMax`.
+- **server/src/Dodorassik.Api/Dtos/HuntDtos.cs** — Ajout `ClueDto`,
+  `CreateClueRequest`, `UpdateHuntRequest` ; `HuntDto` inclut désormais
+  `List<ClueDto> Clues` ; `CreateHuntRequest` accepte `List<CreateClueRequest>?
+  Clues` ; mapping `Clue.ToDto()`.
+- **server/src/Dodorassik.Api/Controllers/HuntsController.cs** — `List`
+  inclut les clues ; `Create` gère les clues avec déduplication de codes ;
+  nouveau `PUT /{id}` (upsert steps + clues + suppression des orphelins) ;
+  `POST /{huntId}/clues` ; `DELETE /{huntId}/clues/{clueId}`.
+
+#### Godot
+
+- **godot/scripts/ui/hunt_editor.gd** — Réécriture complète : formulaire de
+  step par ligne (type via OptionButton, titre, description, params
+  type-spécifiques, points, boutons ↑↓ et suppression) ; section clues
+  (code, titre, reveal, points, suppression) ; logique de save CREATE/UPDATE
+  avec rafraîchissement des ids serveur après chaque sauvegarde.
+- **godot/scripts/autoload/api_client.gd** — Ajout `update_hunt()`,
+  `publish_hunt()`, `add_clue()`, `delete_clue()`.
+
+#### Documentation
+
+- **godot/android/plugin/README.md** — Instructions complètes : setup Gradle,
+  récupération de `godot-lib`, `build.gradle` + `settings.gradle`, compilation
+  AAR debug/release, génération du keystore debug, configuration du preset
+  d'export Godot 4.6, install ADB.
+- **docs/ROADMAP.md** — Phase 2 : items steps+clues et build Android signés
+  cochés ; item plugin natif redéfini (structure compilable, test appareil
+  physique reste à faire).
+- **docs/CLAUDE-LOG.md** — Cette entrée.
+
+### Security & Privacy review
+
+- **Pas de nouvelle PII** : les clues contiennent un code court, un titre et
+  un texte de révélation — aucun identifiant personnel, aucune photo en base.
+- **Autorisation propriétaire vérifiée côté serveur** : `PUT /{id}`, `POST
+  /clues`, `DELETE /clues/{clueId}` vérifient que `hunt.CreatorId ==
+  currentUserId` avant toute mutation. Seul `super_admin` peut outrepasser.
+- **Codes de clue non-PII** : normalisés en majuscules, max 64 caractères,
+  pas d'information personnelle. Déduplication serveur = protection contre
+  les injections d'homonymes.
+- **Rate limiting** : les nouveaux endpoints passent par les limiteurs globaux
+  définis dans `Program.cs`; aucun contournement introduit.
+- **Pas de logs PII** ajoutés dans les nouveaux controllers.
+- **Upsert by Id** : un client malveillant ne peut pas modifier une clue d'une
+  autre chasse car la recherche filtre sur `HuntId` avant de matcher l'Id.
+
+---
+
+## 2026-04-26 — Inscription créateur Godot + interface web publique
 
 **Branche** : `claude/godot-family-game-7x9Ki`
 **Commit** : `5566752`

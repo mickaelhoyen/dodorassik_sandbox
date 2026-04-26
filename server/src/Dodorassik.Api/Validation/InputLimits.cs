@@ -21,4 +21,9 @@ public static class InputLimits
 
     public const int JsonParamsMaxBytes = 8_192;
     public const int JsonPayloadMaxBytes = 8_192;
+
+    public const int ClueCodeMaxLength = 64;
+    public const int ClueTitleMaxLength = 256;
+    public const int ClueRevealMaxLength = 4_000;
+    public const int CluesPerHuntMax = 200;
 }

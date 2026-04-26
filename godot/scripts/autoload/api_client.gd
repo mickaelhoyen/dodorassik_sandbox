@@ -64,6 +64,22 @@ func create_hunt(payload: Dictionary) -> Dictionary:
 	return await request("POST", "/api/hunts", payload)
 
 
+func update_hunt(hunt_id: String, payload: Dictionary) -> Dictionary:
+	return await request("PUT", "/api/hunts/%s" % hunt_id, payload)
+
+
+func publish_hunt(hunt_id: String) -> Dictionary:
+	return await request("POST", "/api/hunts/%s/publish" % hunt_id)
+
+
+func add_clue(hunt_id: String, clue_data: Dictionary) -> Dictionary:
+	return await request("POST", "/api/hunts/%s/clues" % hunt_id, clue_data)
+
+
+func delete_clue(hunt_id: String, clue_id: String) -> Dictionary:
+	return await request("DELETE", "/api/hunts/%s/clues/%s" % [hunt_id, clue_id])
+
+
 func submit_step(hunt_id: String, step_id: String, payload: Dictionary) -> Dictionary:
 	return await request("POST", "/api/hunts/%s/steps/%s/submit" % [hunt_id, step_id], payload)
 

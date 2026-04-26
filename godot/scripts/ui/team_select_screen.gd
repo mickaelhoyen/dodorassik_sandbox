@@ -130,5 +130,8 @@ func _join_team(team_id: String) -> void:
 			if String(t.get("id", "")) == team_id:
 				AppState.set_active_team(t)
 				break
+	else:
+		# Refresh failed — use minimal dict so the run can still start.
+		AppState.set_active_team({"id": team_id, "name": "?"})
 
 	Router.go("hunt_runner", {"hunt": _hunt})

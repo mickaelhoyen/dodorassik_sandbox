@@ -12,6 +12,8 @@ extends Node
 signal location_updated(lat: float, lon: float, accuracy: float)
 signal photo_captured(path: String, size_bytes: int)
 signal bluetooth_device_found(name: String, address: String, rssi: int)
+signal map_confirmed(result_json: String)
+signal map_cancelled()
 
 const PLUGIN_NAME := "DodorassikDevice"
 
@@ -27,6 +29,29 @@ func _ready() -> void:
 			_plugin.connect("photo_captured", _on_native_photo)
 		if _plugin.has_signal("bluetooth_device_found"):
 			_plugin.connect("bluetooth_device_found", _on_native_bt)
+		if _plugin.has_signal("map_confirmed"):
+			_plugin.connect("map_confirmed", _on_native_map_confirmed)
+		if _plugin.has_signal("map_cancelled"):
+			_plugin.connect("map_cancelled", _on_native_map_cancelled)
+
+
+func has_map() -> bool:
+	return _plugin != null and _plugin.has_method("show_map")
+
+
+func show_map() -> void:
+	if _plugin != null and _plugin.has_method("show_map"):
+		_plugin.call("show_map")
+
+
+func hide_map() -> void:
+	if _plugin != null and _plugin.has_method("hide_map"):
+		_plugin.call("hide_map")
+
+
+func load_map_steps(steps_json: String) -> void:
+	if _plugin != null and _plugin.has_method("load_map_steps"):
+		_plugin.call("load_map_steps", steps_json)
 
 
 func has_gps() -> bool:
@@ -130,6 +155,14 @@ func _on_native_photo(path: String, size_bytes: int) -> void:
 
 func _on_native_bt(name: String, address: String, rssi: int) -> void:
 	bluetooth_device_found.emit(name, address, rssi)
+
+
+func _on_native_map_confirmed(result_json: String) -> void:
+	map_confirmed.emit(result_json)
+
+
+func _on_native_map_cancelled() -> void:
+	map_cancelled.emit()
 
 
 # ---------- Pure helpers ---------------------------------------------------

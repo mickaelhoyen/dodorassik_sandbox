@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Éditeur de carte</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    #map { position: absolute; inset: 0 0 56px 0; }
+    #toolbar {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 56px;
+      background: #1a1d27; display: flex; align-items: center;
+      gap: 8px; padding: 0 12px; border-top: 1px solid #2e3248;
+    }
+    #status { flex: 1; font-size: 12px; color: #718096; white-space: nowrap;
+              overflow: hidden; text-overflow: ellipsis; }
+    .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer;
+           font-size: 14px; font-weight: 600; }
+    #btn-cancel  { background: #2e3248; color: #e2e8f0; }
+    #btn-confirm { background: #3ecf8e; color: #000; }
+    /* Leaflet popup tweaks */
+    .leaflet-popup-content { margin: 10px 14px; min-width: 160px; }
+    .popup-title { font-weight: 700; margin-bottom: 6px; font-size: 13px; }
+    .popup-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; }
+    .popup-row label { color: #666; min-width: 50px; }
+    .popup-row input[type=number] { width: 70px; padding: 3px 5px; border: 1px solid #ccc;
+                                    border-radius: 4px; font-size: 12px; }
+    .popup-del { background: #f56565; color: #fff; border: none; border-radius: 4px;
+                 padding: 4px 10px; cursor: pointer; font-size: 12px; width: 100%; margin-top: 4px; }
+    /* Unplaced badge */
+    .badge-unplaced { background: #ed8936; color: #fff; font-size: 11px; padding: 2px 6px;
+                      border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="toolbar">
+  <span id="status">Appuie sur la carte pour placer une étape</span>
+  <button class="btn" id="btn-cancel"  onclick="doCancel()">Annuler</button>
+  <button class="btn" id="btn-confirm" onclick="doConfirm()">✓ Confirmer</button>
+</div>
+
+<script>
+// ── Map init ───────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true }).setView([46.5, 2.5], 6);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+// ── State ──────────────────────────────────────────────────────────────────
+// Each entry: { stepIndex, title, lat, lon, radius_m, marker, circle }
+let entries = [];
+// Steps that have no position yet — assigned in order when user taps map
+let unplacedQueue = [];
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+function initBase64(b64) {
+  try {
+    const json = decodeURIComponent(escape(atob(b64)));
+    init(json);
+  } catch (e) {
+    updateStatus('Erreur de chargement : ' + e.message);
+  }
+}
+
+function init(stepsJson) {
+  // Clear previous state
+  entries.forEach(e => { e.marker.remove(); e.circle.remove(); });
+  entries = [];
+  unplacedQueue = [];
+
+  let steps;
+  try { steps = JSON.parse(stepsJson); } catch { steps = []; }
+
+  const placed = [];
+
+  steps.forEach(step => {
+    const lat = parseFloat(step.lat) || 0;
+    const lon = parseFloat(step.lon) || 0;
+    const radius = parseInt(step.radius_m) || 30;
+    const hasCoords = lat !== 0 || lon !== 0;
+
+    if (hasCoords) {
+      addEntry(step.stepIndex, step.title, lat, lon, radius);
+      placed.push([lat, lon]);
+    } else {
+      unplacedQueue.push({ stepIndex: step.stepIndex, title: step.title, radius_m: radius });
+    }
+  });
+
+  updateStatus(unplacedQueue.length > 0
+    ? `${unplacedQueue.length} étape(s) à placer — appuie sur la carte`
+    : 'Toutes les étapes sont placées');
+
+  // Fit map to placed markers or default France view
+  if (placed.length === 1) {
+    map.setView(placed[0], 15);
+  } else if (placed.length > 1) {
+    map.fitBounds(placed, { padding: [40, 40] });
+  }
+}
+
+// ── Add / update entries ───────────────────────────────────────────────────
+function addEntry(stepIndex, title, lat, lon, radius) {
+  const circle = L.circle([lat, lon], {
+    radius, color: '#6c63ff', fillColor: '#6c63ff', fillOpacity: 0.15, weight: 2
+  }).addTo(map);
+
+  const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+  const entry = { stepIndex, title, lat, lon, radius_m: radius, marker, circle };
+  entries.push(entry);
+  const idx = entries.length - 1;
+
+  marker.on('drag', ev => {
+    const pos = ev.target.getLatLng();
+    entry.lat = pos.lat;
+    entry.lon = pos.lng;
+    circle.setLatLng(pos);
+  });
+
+  marker.bindPopup(() => makePopupContent(idx));
+  marker.on('click', () => marker.openPopup());
+  return entry;
+}
+
+function makePopupContent(idx) {
+  const e = entries[idx];
+  const div = document.createElement('div');
+  div.innerHTML = `
+    <div class="popup-title">${esc(e.title || 'Étape ' + (idx + 1))}</div>
+    <div class="popup-row">
+      <label>Rayon</label>
+      <input type="number" value="${e.radius_m}" min="5" max="5000" step="5"
+             onchange="setRadius(${idx}, this.value)" /> m
+    </div>
+    <div class="popup-row" style="font-size:11px;color:#888">
+      ${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}
+    </div>
+    <button class="popup-del" onclick="removeEntry(${idx})">Supprimer ce point</button>
+  `;
+  return div;
+}
+
+function setRadius(idx, val) {
+  const r = Math.max(5, Math.min(5000, parseInt(val) || 30));
+  entries[idx].radius_m = r;
+  entries[idx].circle.setRadius(r);
+}
+
+function removeEntry(idx) {
+  map.closePopup();
+  entries[idx].marker.remove();
+  entries[idx].circle.remove();
+  // Push back to unplaced so the user can reassign it
+  unplacedQueue.push({
+    stepIndex: entries[idx].stepIndex,
+    title: entries[idx].title,
+    radius_m: entries[idx].radius_m
+  });
+  entries.splice(idx, 1);
+  updateStatus(`${unplacedQueue.length} étape(s) à placer — appuie sur la carte`);
+}
+
+// ── Map click: assign next unplaced step ──────────────────────────────────
+map.on('click', ev => {
+  if (unplacedQueue.length === 0) return;
+  const next = unplacedQueue.shift();
+  addEntry(next.stepIndex, next.title, ev.latlng.lat, ev.latlng.lng, next.radius_m);
+  const remaining = unplacedQueue.length;
+  updateStatus(remaining > 0
+    ? `${remaining} étape(s) restante(s) à placer`
+    : 'Toutes les étapes sont placées ✓');
+});
+
+// ── Confirm / Cancel ───────────────────────────────────────────────────────
+function doConfirm() {
+  const result = entries.map(e => ({
+    stepIndex: e.stepIndex,
+    lat: e.lat,
+    lon: e.lon,
+    radius_m: e.radius_m,
+  }));
+  if (window.MapBridge) MapBridge.onConfirm(JSON.stringify(result));
+}
+
+function doCancel() {
+  if (window.MapBridge) MapBridge.onCancel();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function updateStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

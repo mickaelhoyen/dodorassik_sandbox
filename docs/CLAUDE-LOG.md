@@ -13,6 +13,64 @@
 
 ---
 
+## 2026-04-26 — Éditeur de carte (Option B WebView) + corrections code review
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Pour l'éditeur de carte implémentes l'option B. Analyses de nouveau l'ensemble
+> du code pour vérifier s'il n'y aurait pas d'autres améliorations à apporter.
+
+### Analyse
+
+**Éditeur de carte — Option B (WebView Leaflet.js)**
+Choix confirmé : WebView Android overlay, HTML bundlé dans les assets du plugin,
+Leaflet.js via CDN (créateurs connectés lors de l'édition). Alternative CDN
+rejetée pour le runner (joueurs hors ligne) — pas concerné ici.
+Architecture : `MapModule.java` est un module interne de `DodorassikDevice`
+(même pattern que LocationModule/CameraModule/BluetoothModule). Communication
+GDScript→JS via `evaluateJavascript(initBase64(b64))` avec Base64 pour éviter
+l'échappement JSON. Retour JS→GDScript via `JavascriptInterface` → signaux
+`map_confirmed` / `map_cancelled` propagés par DeviceServices.
+Pas de nouvel écran/route — la carte s'ouvre en overlay sans détruire hunt_editor,
+ce qui évite le problème de Callable sur objet libéré.
+
+**Corrections code review**
+- Faux positif AntiCheatService (Include non nécessaire — EF Core traduit les
+  navigation properties en JOIN dans les WHERE automatiquement).
+- Faux positif leaderboard auth (le code protège déjà les chasses non publiées).
+- Vrais bugs corrigés : traductions PLAYER_PLAY_BTN/PLAYER_DOWNLOAD_BTN manquantes,
+  team_select_screen continue vers hunt_runner si le refresh post-join échoue
+  (fallback sur dict minimal au lieu de crash silencieux).
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `godot/android/plugin/src/main/java/com/dodorassik/device/MapModule.java` | Créé — WebView overlay + JavascriptInterface |
+| `godot/android/plugin/src/main/java/com/dodorassik/device/DodorassikDevice.java` | Modifié — MapModule + signaux map_confirmed/map_cancelled |
+| `godot/android/plugin/src/main/assets/map_editor.html` | Créé — Leaflet.js map, placement/drag, rayon, confirm/cancel |
+| `godot/scripts/autoload/device_services.gd` | Modifié — signaux + méthodes map wrapper |
+| `godot/scripts/ui/hunt_editor.gd` | Modifié — bouton 🗺️, _open_map, _on_map_confirmed, _on_map_cancelled |
+| `godot/translations/strings.csv` | Modifié — PLAYER_PLAY_BTN, PLAYER_DOWNLOAD_BTN, MAP_EDITOR_* |
+| `godot/scripts/ui/team_select_screen.gd` | Modifié — fallback active_team si refresh échoue |
+| `docs/ROADMAP.md` | Éditeur de carte coché |
+
+### Security & Privacy review
+
+- Le WebView charge la carte depuis `file:///android_asset/map_editor.html`
+  (contenu maîtrisé, pas d'injection possible via URL externe).
+- `MIXED_CONTENT_ALWAYS_ALLOW` activé uniquement pour permettre file://→HTTPS
+  pour les tuiles OSM ; limité à ce WebView isolé, pas à l'app entière.
+- Les coordonnées GPS retournées par la carte ne sont pas loguées (seul le
+  payload JSON opaque transite via le signal, comme les autres modules).
+- Aucune PII nouvelle. Le JavascriptInterface expose uniquement onConfirm et
+  onCancel — surface d'attaque minimale.
+
+---
+
 ## 2026-04-26 — Phase 5 : CI/CD, Docker, statistiques d'usage, console super-admin web
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

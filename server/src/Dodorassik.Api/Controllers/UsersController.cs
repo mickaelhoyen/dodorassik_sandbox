@@ -97,13 +97,13 @@ public class UsersController : ControllerBase
         var u = await CurrentUserAsync();
         if (u is null) return Unauthorized();
 
-        await _db.Submissions
-            .Where(s => s.SubmittedById == u.Id)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(s => s.SubmittedById, Guid.Empty));
+        // ExecuteUpdateAsync is relational-only; load + save works on both
+        // InMemory (tests) and PostgreSQL (production).
+        var subs = await _db.Submissions.Where(s => s.SubmittedById == u.Id).ToListAsync();
+        foreach (var s in subs) s.SubmittedById = Guid.Empty;
 
-        await _db.Hunts
-            .Where(h => h.CreatorId == u.Id)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(h => h.CreatorId, Guid.Empty));
+        var hunts = await _db.Hunts.Where(h => h.CreatorId == u.Id).ToListAsync();
+        foreach (var h in hunts) h.CreatorId = Guid.Empty;
 
         _db.Users.Remove(u);
         await _db.SaveChangesAsync();

@@ -13,6 +13,49 @@
 
 ---
 
+## 2026-04-26 — Correction CI (ExecuteUpdateAsync InMemory + Godot download)
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Le CI fail à chaque fois, vérifies si quelque chose pose problème si ce n'est
+> pas le cas désactives temporairement le CI.
+
+### Analyse
+
+Deux problèmes distincts confirmés par inspection des check runs sur les PRs #11 et #12 :
+
+1. **`ci-godot.yml` — 404 au téléchargement** : la version `Godot_v4.6-stable_linux.x86_64`
+   n'est pas encore publiée sur GitHub Releases, ce qui fait échouer le `curl` en 14 secondes.
+   Solution : changer le trigger de `push/pull_request` à `workflow_dispatch` seulement,
+   avec un commentaire expliquant la cause. À réactiver dès la sortie de Godot 4.6 stable.
+
+2. **`ci-server.yml` — test `Delete_requires_explicit_confirmation` échoue** :
+   `UsersController.Delete` utilise `ExecuteUpdateAsync()` (EF Core 7+). Cette API
+   est réservée aux providers relationnels ; le provider InMemory utilisé en tests
+   ne la supporte pas et lève une exception → le contrôleur renvoie 500 au lieu de 204.
+   Solution : remplacer par le pattern classique load+set+SaveChanges, compatible
+   avec InMemory et PostgreSQL.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Api/Controllers/UsersController.cs` | Correctif — ExecuteUpdateAsync → load+update loop |
+| `.github/workflows/ci-godot.yml` | Désactivé temporairement (trigger → workflow_dispatch) |
+
+### Security & Privacy review
+
+- Le correctif GDPR (`Delete`) est fonctionnellement équivalent : les soumissions et
+  chasses de l'utilisateur sont bien anonymisées avant suppression. Aucun changement
+  de logique de sécurité ou de vie privée.
+- Le trigger `workflow_dispatch` ne supprime pas le workflow ; il empêche juste les
+  runs automatiques qui auraient toujours échoué de toute façon.
+
+---
+
 ## 2026-04-26 — Éditeur de carte (Option B WebView) + corrections code review
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

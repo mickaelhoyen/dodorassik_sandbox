@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<HuntScore> HuntScores => Set<HuntScore>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<StepTemplate> StepTemplates => Set<StepTemplate>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -94,6 +95,16 @@ public class AppDbContext : DbContext
             e.HasKey(m => new { m.TeamId, m.UserId });
             e.HasOne(m => m.Team).WithMany(t => t.Members).HasForeignKey(m => m.TeamId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<StepTemplate>(e =>
+        {
+            e.Property(t => t.Title).HasMaxLength(256).IsRequired();
+            e.Property(t => t.Description).HasMaxLength(4000);
+            e.Property(t => t.Tags).HasMaxLength(512);
+            e.Property(t => t.ParamsJson).HasColumnType("jsonb");
+            e.HasOne(t => t.CreatedBy).WithMany().HasForeignKey(t => t.CreatedById).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(t => new { t.CreatedById, t.IsPublic });
         });
     }
 }

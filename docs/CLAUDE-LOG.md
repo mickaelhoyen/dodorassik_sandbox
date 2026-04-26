@@ -13,6 +13,75 @@
 
 ---
 
+## 2026-04-26 — Phase 4 : internationalisation FR/EN, bibliothèque d'étapes, modération super-admin
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Continues sur la phase suivante.
+
+### Analyse
+
+Phase 4 — Création avancée — comporte cinq items :
+
+1. **Éditeur de carte** — non implémenté (dépend d'un moteur carto tiers).
+2. **Bibliothèque d'étapes** — implémenté côté serveur + Godot.
+3. **Validation super-admin** — déjà implémentée en phase précédente ; écran
+   Godot `AdminModerationScreen` ajouté.
+4. **Marketplace** — non implémenté (dépend d'un module paiement).
+5. **Internationalisation** — implémentée : CSV 188 clés, `AppLocale`, tous
+   les écrans migrés vers `tr()`.
+
+Choix techniques :
+- CSV Godot natif (TranslationServer) plutôt que JSON custom : aucune
+  dépendance, rechargeable à chaud, compatible Godot export.
+- `AppLocale` partage `user://config.json` avec `ApiClient` pour minimiser
+  les fichiers de conf.
+- La bibliothèque d'étapes est limitée aux créateurs (`Authorize(Roles=
+  "creator,super_admin")`), jamais exposée aux joueurs.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `godot/translations/strings.csv` | Créé — ~188 clés FR/EN |
+| `godot/scripts/autoload/app_locale.gd` | Créé — gestion locale + persistance |
+| `godot/project.godot` | Modifié — autoload AppLocale + section i18n |
+| `godot/scripts/ui/role_selection_screen.gd` | Migré vers tr() + sélecteur langue |
+| `godot/scripts/ui/login_screen.gd` | Migré vers tr() |
+| `godot/scripts/ui/signup_screen.gd` | Migré vers tr() |
+| `godot/scripts/ui/family_select_screen.gd` | Migré vers tr() |
+| `godot/scripts/ui/player_home.gd` | Migré vers tr() |
+| `godot/scripts/ui/creator_home.gd` | Migré vers tr() |
+| `godot/scripts/ui/super_admin_home.gd` | Migré vers tr(), route admin_moderation |
+| `godot/scripts/ui/hunt_runner.gd` | Migré vers tr() |
+| `godot/scripts/ui/team_select_screen.gd` | Migré vers tr() |
+| `godot/scripts/ui/leaderboard_screen.gd` | Migré vers tr() |
+| `godot/scripts/ui/hunt_editor.gd` | Migré vers tr(), bouton Bibliothèque, _inject_template |
+| `godot/scripts/ui/step_library_screen.gd` | Créé — filtres mine/type, usage de modèle |
+| `godot/scripts/ui/admin_moderation_screen.gd` | Créé — file de modération, approve/reject |
+| `godot/scripts/autoload/api_client.gd` | Ajout search_step_templates, admin_* |
+| `godot/scripts/autoload/router.gd` | Ajout routes step_library, admin_moderation |
+| `server/src/Dodorassik.Core/Domain/StepTemplate.cs` | Créé — entité template |
+| `server/src/Dodorassik.Api/Dtos/StepTemplateDtos.cs` | Créé — DTO + mapping |
+| `server/src/Dodorassik.Api/Controllers/StepTemplatesController.cs` | Créé — CRUD REST |
+| `server/src/Dodorassik.Infrastructure/Persistence/AppDbContext.cs` | Modifié — DbSet StepTemplate + config EF |
+| `docs/ROADMAP.md` | Phase 4 items cochés |
+
+### Security & Privacy review
+
+- `StepTemplatesController` : `[Authorize(Roles = "creator,super_admin")]` global,
+  ownership check sur update/delete, pas de bypass possible.
+- Aucune PII nouvelle : `StepTemplate` ne stocke que du contenu de jeu
+  (titre, description, type, params, tags) + `CreatedById` (FK existante).
+- `AdminModerationScreen` s'appuie sur `AdminHuntsController` déjà sécurisé
+  (`[Authorize(Roles = "super_admin")]`).
+- Aucun secret committé. Logs inchangés.
+
+---
+
 ## 2026-04-26 — Phase 3 : multi-joueur compétitif, leaderboard temps réel, anti-triche
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

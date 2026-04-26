@@ -20,6 +20,7 @@ boot_splash/show_image=false
 
 [autoload]
 
+AppLocale="*res://scripts/autoload/app_locale.gd"
 AppState="*res://scripts/autoload/app_state.gd"
 ApiClient="*res://scripts/autoload/api_client.gd"
 OfflineCache="*res://scripts/autoload/offline_cache.gd"
@@ -63,6 +64,11 @@ permissions/bluetooth_admin=true
 permissions/bluetooth_scan=true
 permissions/bluetooth_connect=true
 permissions/internet=true
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/strings.csv")
+locale/fallback="fr"
 
 [rendering]
 

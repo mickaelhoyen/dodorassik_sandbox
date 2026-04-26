@@ -17,14 +17,15 @@ const STEP_TYPES := [
 	"clue_collect",
 ]
 
-const STEP_TYPE_LABELS := {
-	"manual":       "Manuel (adulte valide)",
-	"location":     "GPS (position)",
-	"photo":        "Photo",
-	"bluetooth":    "Balise Bluetooth",
-	"text_answer":  "Réponse texte",
-	"clue_collect": "Code physique",
-}
+func _step_type_labels() -> Dictionary:
+	return {
+		"manual":       tr("EDITOR_STEP_TYPE_MANUAL"),
+		"location":     tr("EDITOR_STEP_TYPE_LOCATION"),
+		"photo":        tr("EDITOR_STEP_TYPE_PHOTO"),
+		"bluetooth":    tr("EDITOR_STEP_TYPE_BLUETOOTH"),
+		"text_answer":  tr("EDITOR_STEP_TYPE_TEXT"),
+		"clue_collect": tr("EDITOR_STEP_TYPE_CLUE"),
+	}
 
 var _hunt: Dictionary = {}
 
@@ -45,28 +46,28 @@ func build() -> void:
 	_steps = _hunt.get("steps", []).duplicate(true) if _hunt.has("steps") else []
 	_clues = _hunt.get("clues", []).duplicate(true) if _hunt.has("clues") else []
 
-	add_title("Éditeur de parcours")
+	add_title(tr("EDITOR_TITLE"))
 
 	# ---- Metadata -----------------------------------------------------------
 	_name_edit = LineEdit.new()
-	_name_edit.placeholder_text = "Nom du parcours"
+	_name_edit.placeholder_text = tr("EDITOR_NAME_PLACEHOLDER")
 	_name_edit.text = String(_hunt.get("name", ""))
 	add_node(_name_edit)
 
 	_description_edit = TextEdit.new()
-	_description_edit.placeholder_text = "Description (histoire, public visé…)"
+	_description_edit.placeholder_text = tr("EDITOR_DESC_PLACEHOLDER")
 	_description_edit.text = String(_hunt.get("description", ""))
 	_description_edit.custom_minimum_size = Vector2(0, 100)
 	add_node(_description_edit)
 
 	var mode_row := HBoxContainer.new()
 	var mode_lbl := Label.new()
-	mode_lbl.text = "Mode :"
+	mode_lbl.text = tr("EDITOR_MODE_LABEL")
 	mode_lbl.custom_minimum_size = Vector2(80, 0)
 	mode_row.add_child(mode_lbl)
 	_mode_option = OptionButton.new()
-	_mode_option.add_item("Détendu (famille)", 0)
-	_mode_option.add_item("Compétitif (chrono)", 1)
+	_mode_option.add_item(tr("EDITOR_MODE_RELAXED"), 0)
+	_mode_option.add_item(tr("EDITOR_MODE_COMPETITIVE"), 1)
 	_mode_option.selected = 1 if String(_hunt.get("mode", "relaxed")) == "competitive" else 0
 	_mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(_mode_option)
@@ -75,8 +76,19 @@ func build() -> void:
 	add_separator()
 
 	# ---- Steps section ------------------------------------------------------
-	var steps_hdr := _make_section_header("Étapes", func() -> void: _add_step())
+	var steps_hdr := _make_section_header(tr("EDITOR_STEPS_SECTION"), func() -> void: _add_step())
 	add_node(steps_hdr)
+
+	# Library button row
+	var lib_row := HBoxContainer.new()
+	var lib_btn := Button.new()
+	lib_btn.text = tr("EDITOR_LIBRARY_BTN")
+	lib_btn.pressed.connect(func() -> void:
+		Router.go("step_library", {
+			"on_use": func(tmpl: Dictionary) -> void: _inject_template(tmpl),
+		}))
+	lib_row.add_child(lib_btn)
+	add_node(lib_row)
 
 	_steps_box = VBoxContainer.new()
 	_steps_box.add_theme_constant_override("separation", 4)
@@ -86,7 +98,7 @@ func build() -> void:
 	add_separator()
 
 	# ---- Clues section ------------------------------------------------------
-	var clues_hdr := _make_section_header("Indices physiques (codes sur cartes)", func() -> void: _add_clue())
+	var clues_hdr := _make_section_header(tr("EDITOR_CLUES_SECTION"), func() -> void: _add_clue())
 	add_node(clues_hdr)
 
 	_clues_box = VBoxContainer.new()
@@ -97,8 +109,8 @@ func build() -> void:
 	add_separator()
 
 	# ---- Actions ------------------------------------------------------------
-	add_button("💾  Enregistrer", func() -> void: _save())
-	add_button("Retour", func() -> void: Router.go("creator_home"))
+	add_button(tr("EDITOR_SAVE_BTN"), func() -> void: _save())
+	add_button(tr("BTN_BACK"), func() -> void: Router.go("creator_home"))
 
 
 # ============================================================  Steps  ========
@@ -126,8 +138,9 @@ func _make_step_row(i: int) -> Control:
 	hdr.add_child(order_lbl)
 
 	var type_btn := OptionButton.new()
+	var _labels := _step_type_labels()
 	for t in STEP_TYPES:
-		type_btn.add_item(STEP_TYPE_LABELS[t])
+		type_btn.add_item(_labels[t])
 	type_btn.selected = STEP_TYPES.find(String(step.get("type", "manual")))
 	type_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	type_btn.item_selected.connect(func(idx: int) -> void:
@@ -165,14 +178,14 @@ func _make_step_row(i: int) -> Control:
 
 	# Title field
 	var title_edit := LineEdit.new()
-	title_edit.placeholder_text = "Titre de l'étape"
+	title_edit.placeholder_text = tr("EDITOR_STEP_TITLE_PLACEHOLDER")
 	title_edit.text = String(step.get("title", ""))
 	title_edit.text_changed.connect(func(v: String) -> void: _steps[i]["title"] = v)
 	vbox.add_child(title_edit)
 
 	# Description field
 	var desc_edit := TextEdit.new()
-	desc_edit.placeholder_text = "Description / consigne (facultatif)"
+	desc_edit.placeholder_text = tr("EDITOR_STEP_DESC_PLACEHOLDER")
 	desc_edit.text = String(step.get("description", ""))
 	desc_edit.custom_minimum_size = Vector2(0, 60)
 	desc_edit.text_changed.connect(func() -> void: _steps[i]["description"] = desc_edit.text)
@@ -186,7 +199,7 @@ func _make_step_row(i: int) -> Control:
 	# Points
 	var pts_row := HBoxContainer.new()
 	var pts_lbl := Label.new()
-	pts_lbl.text = "Points :"
+	pts_lbl.text = tr("LBL_POINTS")
 	pts_lbl.custom_minimum_size = Vector2(60, 0)
 	pts_row.add_child(pts_lbl)
 	var pts_spin := SpinBox.new()
@@ -219,7 +232,7 @@ func _make_location_params(i: int, params: Dictionary) -> Node:
 	var box := VBoxContainer.new()
 	var row1 := HBoxContainer.new()
 
-	var lat_lbl := Label.new(); lat_lbl.text = "Lat :"; lat_lbl.custom_minimum_size = Vector2(40, 0)
+	var lat_lbl := Label.new(); lat_lbl.text = tr("EDITOR_LOCATION_LAT"); lat_lbl.custom_minimum_size = Vector2(40, 0)
 	row1.add_child(lat_lbl)
 	var lat_edit := LineEdit.new()
 	lat_edit.text = String(params.get("lat", ""))
@@ -228,7 +241,7 @@ func _make_location_params(i: int, params: Dictionary) -> Node:
 	lat_edit.text_changed.connect(func(v: String) -> void: _update_step_param(i, "lat", float(v) if v.is_valid_float() else ""))
 	row1.add_child(lat_edit)
 
-	var lon_lbl := Label.new(); lon_lbl.text = "Lon :"; lon_lbl.custom_minimum_size = Vector2(40, 0)
+	var lon_lbl := Label.new(); lon_lbl.text = tr("EDITOR_LOCATION_LON"); lon_lbl.custom_minimum_size = Vector2(40, 0)
 	row1.add_child(lon_lbl)
 	var lon_edit := LineEdit.new()
 	lon_edit.text = String(params.get("lon", ""))
@@ -239,7 +252,7 @@ func _make_location_params(i: int, params: Dictionary) -> Node:
 	box.add_child(row1)
 
 	var row2 := HBoxContainer.new()
-	var r_lbl := Label.new(); r_lbl.text = "Rayon (m) :"; r_lbl.custom_minimum_size = Vector2(80, 0)
+	var r_lbl := Label.new(); r_lbl.text = tr("EDITOR_LOCATION_RADIUS"); r_lbl.custom_minimum_size = Vector2(80, 0)
 	row2.add_child(r_lbl)
 	var r_spin := SpinBox.new()
 	r_spin.min_value = 5; r_spin.max_value = 5000; r_spin.step = 5
@@ -253,11 +266,11 @@ func _make_location_params(i: int, params: Dictionary) -> Node:
 
 func _make_text_params(i: int, params: Dictionary) -> Node:
 	var row := HBoxContainer.new()
-	var lbl := Label.new(); lbl.text = "Réponse attendue :"; lbl.custom_minimum_size = Vector2(140, 0)
+	var lbl := Label.new(); lbl.text = tr("EDITOR_TEXT_ANSWER"); lbl.custom_minimum_size = Vector2(140, 0)
 	row.add_child(lbl)
 	var edit := LineEdit.new()
 	edit.text = String(params.get("expected", ""))
-	edit.placeholder_text = "Laissez vide = toute réponse acceptée"
+	edit.placeholder_text = tr("EDITOR_TEXT_PLACEHOLDER")
 	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edit.text_changed.connect(func(v: String) -> void: _update_step_param(i, "expected", v))
 	row.add_child(edit)
@@ -268,7 +281,7 @@ func _make_bluetooth_params(i: int, params: Dictionary) -> Node:
 	var raw: Variant = params.get("allowed_addresses", [])
 	var addrs: String = ", ".join(PackedStringArray(raw if typeof(raw) == TYPE_ARRAY else []))
 	var row := HBoxContainer.new()
-	var lbl := Label.new(); lbl.text = "Adresses MAC :"; lbl.custom_minimum_size = Vector2(120, 0)
+	var lbl := Label.new(); lbl.text = tr("EDITOR_BLUETOOTH_MAC"); lbl.custom_minimum_size = Vector2(120, 0)
 	row.add_child(lbl)
 	var edit := LineEdit.new()
 	edit.text = addrs
@@ -291,10 +304,22 @@ func _update_step_param(i: int, key: String, value: Variant) -> void:
 	_steps[i]["params"][key] = value
 
 
+func _inject_template(tmpl: Dictionary) -> void:
+	_steps.append({
+		"type": String(tmpl.get("type", "manual")),
+		"title": String(tmpl.get("title", "")),
+		"description": String(tmpl.get("description", "")),
+		"params": tmpl.get("params", {}),
+		"points": int(tmpl.get("defaultPoints", 10)),
+		"blocksNext": true,
+	})
+	_render_steps()
+
+
 func _add_step() -> void:
 	_steps.append({
 		"type": "manual",
-		"title": "Nouvelle étape",
+		"title": tr("EDITOR_NEW_STEP_TITLE"),
 		"description": "",
 		"params": {},
 		"points": 10,
@@ -323,7 +348,7 @@ func _make_clue_row(i: int) -> Control:
 	# Header: code + delete
 	var hdr := HBoxContainer.new()
 	var code_edit := LineEdit.new()
-	code_edit.placeholder_text = "CODE (ex: A1-07)"
+	code_edit.placeholder_text = tr("EDITOR_CLUE_CODE_PLACEHOLDER")
 	code_edit.text = String(clue.get("code", ""))
 	code_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	code_edit.text_changed.connect(func(v: String) -> void: _clues[i]["code"] = v.to_upper().strip_edges())
@@ -339,14 +364,14 @@ func _make_clue_row(i: int) -> Control:
 
 	# Title
 	var title_edit := LineEdit.new()
-	title_edit.placeholder_text = "Titre de l'indice (visible quand trouvé)"
+	title_edit.placeholder_text = tr("EDITOR_CLUE_TITLE_PLACEHOLDER")
 	title_edit.text = String(clue.get("title", ""))
 	title_edit.text_changed.connect(func(v: String) -> void: _clues[i]["title"] = v)
 	vbox.add_child(title_edit)
 
 	# Reveal text
 	var reveal_edit := TextEdit.new()
-	reveal_edit.placeholder_text = "Texte révélé quand l'enfant entre le code"
+	reveal_edit.placeholder_text = tr("EDITOR_CLUE_REVEAL_PLACEHOLDER")
 	reveal_edit.text = String(clue.get("reveal", ""))
 	reveal_edit.custom_minimum_size = Vector2(0, 60)
 	reveal_edit.text_changed.connect(func() -> void: _clues[i]["reveal"] = reveal_edit.text)
@@ -354,7 +379,7 @@ func _make_clue_row(i: int) -> Control:
 
 	# Points
 	var pts_row := HBoxContainer.new()
-	var pts_lbl := Label.new(); pts_lbl.text = "Points :"; pts_lbl.custom_minimum_size = Vector2(60, 0)
+	var pts_lbl := Label.new(); pts_lbl.text = tr("LBL_POINTS"); pts_lbl.custom_minimum_size = Vector2(60, 0)
 	pts_row.add_child(pts_lbl)
 	var pts_spin := SpinBox.new()
 	pts_spin.min_value = 0; pts_spin.max_value = 1000
@@ -381,14 +406,14 @@ func _add_clue() -> void:
 func _save() -> void:
 	var name: String = _name_edit.text.strip_edges()
 	if name.is_empty():
-		set_status("Le nom du parcours est obligatoire.", true)
+		set_status(tr("EDITOR_NAME_REQUIRED"), true)
 		return
 
 	# Build steps payload, preserving server-assigned ids for upsert
 	var steps_payload: Array = []
 	for s in _steps:
 		var entry: Dictionary = {
-			"title": String(s.get("title", "Étape")),
+			"title": String(s.get("title", tr("EDITOR_DEFAULT_STEP_TITLE"))),
 			"description": String(s.get("description", "")),
 			"type": String(s.get("type", "manual")),
 			"params": s.get("params", {}),
@@ -418,7 +443,7 @@ func _save() -> void:
 	var mode_val: String = "competitive" if _mode_option.selected == 1 else "relaxed"
 	var hunt_id: String = String(_hunt.get("id", ""))
 
-	set_status("Sauvegarde…")
+	set_status(tr("EDITOR_SAVING"))
 
 	var resp: Dictionary
 	if hunt_id.is_empty():
@@ -441,7 +466,7 @@ func _save() -> void:
 		resp = await ApiClient.update_hunt(hunt_id, payload)
 
 	if not resp["ok"]:
-		set_status("Erreur : %s" % resp["error"], true)
+		set_status(tr("EDITOR_ERR_SAVE") % resp["error"], true)
 		return
 
 	# Refresh local state with server-assigned ids for subsequent saves
@@ -453,7 +478,7 @@ func _save() -> void:
 		_render_steps()
 		_render_clues()
 
-	set_status("Parcours enregistré.")
+	set_status(tr("EDITOR_SAVED"))
 
 
 # ============================================================  Helpers  ======
@@ -466,7 +491,7 @@ func _make_section_header(title: String, on_add: Callable) -> Control:
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var add_btn := Button.new()
-	add_btn.text = "+ Ajouter"
+	add_btn.text = tr("BTN_ADD")
 	add_btn.pressed.connect(on_add)
 	row.add_child(add_btn)
 	return row

@@ -13,6 +13,117 @@
 
 ---
 
+## 2026-04-26 — Phase 3 : multi-joueur compétitif, leaderboard temps réel, anti-triche
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Lis le ROADMAP et poursuit l'implémentation de la prochaine phase, si il y
+> a d'autres urgences programmées, indiques le moi afin que je puisse te dire
+> quoi faire.
+
+### Analyse
+
+La phase 3 — Multi-joueur & compétition — était la prochaine entièrement non
+commencée. Quatre items :
+
+1. **WebSocket / SignalR** — backbone temps-réel pour les chasses compétitives.
+2. **Leaderboard temps réel** — classement persisté + poussé via SignalR.
+3. **Plusieurs équipes par famille** — modèle `Team` + `TeamMember`, workflow
+   Godot d'entrée.
+4. **Anti-triche basique** — ordre des étapes (`BlocksNext`) + vitesse GPS.
+
+**Urgences signalées dans les autres phases :**
+- Phase 5 — CI/CD GitHub Actions + Docker : indépendant, peut être fait à tout
+  moment ; débloquerait les déploiements en production.
+- Phase 5 — Console super-admin web (Blazor) : workflow côté serveur complet
+  mais UI Godot encore en stubs.
+
+Toute la Phase 3 a été implémentée en une session.
+
+### Modifications
+
+#### Backend (C# / .NET 8)
+
+- **`server/src/Dodorassik.Core/Domain/Team.cs`** *(nouveau)* — entités
+  `Team` (Id, Name, Color, HuntId, FamilyId) et `TeamMember` (join composite).
+- **`server/src/Dodorassik.Core/Domain/Submission.cs`** *(modifié)* — ajout
+  `TeamId?` + navigation `Team?`.
+- **`server/src/Dodorassik.Core/Abstractions/IAntiCheatService.cs`** *(nouveau)* —
+  contrat `IsStepOrderValidAsync` + `IsGpsSpeedPlausibleAsync`.
+- **`server/src/Dodorassik.Infrastructure/Persistence/AppDbContext.cs`** *(modifié)* —
+  `DbSet<Team>`, `DbSet<TeamMember>`, config EF (index, FK, composite key), FK
+  `TeamId` sur `StepSubmission`.
+- **`server/src/Dodorassik.Api/Dtos/TeamDtos.cs`** *(nouveau)* — `TeamDto`,
+  `TeamMemberDto`, `CreateTeamRequest`, `LeaderboardEntryDto`, `LeaderboardDto`.
+- **`server/src/Dodorassik.Api/Dtos/HuntDtos.cs`** *(modifié)* — `SubmitStepRequest`
+  accepte maintenant `Guid? TeamId`.
+- **`server/src/Dodorassik.Api/Controllers/TeamsController.cs`** *(nouveau)* —
+  `GET/POST /api/hunts/{huntId}/teams`, `POST join`, `DELETE leave`.
+- **`server/src/Dodorassik.Api/Controllers/HuntsController.cs`** *(modifié)* —
+  injection `IAntiCheatService` + `IHubContext<CompetitiveHuntHub>` ; nouvel
+  endpoint `GET .../leaderboard` (REST + push SignalR après accepted submit) ;
+  anti-triche activé en mode compétitif.
+- **`server/src/Dodorassik.Api/Services/AntiCheatService.cs`** *(nouveau)* —
+  implémentation : validation ordre via `BlocksNext` + haversine speed check 40 km/h.
+- **`server/src/Dodorassik.Api/Hubs/CompetitiveHuntHub.cs`** *(nouveau)* —
+  `JoinHunt(huntId)` / `LeaveHunt(huntId)` ; groupe par huntId.
+- **`server/src/Dodorassik.Api/Program.cs`** *(modifié)* — `AddSignalR()`,
+  `MapHub<CompetitiveHuntHub>`, `IAntiCheatService` (scoped), JWT events pour
+  passer le token en query string (`?access_token=`), `AllowCredentials` CORS.
+
+> **Migration EF Core** : exécuter localement
+> `dotnet ef migrations add AddTeamsAndCompetitive` puis committer le résultat.
+
+#### Godot (GDScript 4.6)
+
+- **`godot/scripts/autoload/competitive_hub_client.gd`** *(nouveau)* — autoload
+  SignalR JSON WebSocket : negotiate → handshake → JoinHunt → dispatch
+  `LeaderboardUpdated`. Ping/Pong. Reconnexion manuelle via `connect_to_hunt`.
+- **`godot/scripts/autoload/app_state.gd`** *(modifié)* — ajout `active_team`,
+  signal `active_team_changed`, `set_active_team()`, reset sur `clear_session`.
+- **`godot/scripts/autoload/api_client.gd`** *(modifié)* — méthodes teams
+  (`list_teams`, `create_team`, `join_team`, `leave_team`) + `get_leaderboard` +
+  `submit_step` accepte `team_id` optionnel (wrapper `{payload, teamId}`).
+- **`godot/scripts/autoload/router.gd`** *(modifié)* — routes `team_select`,
+  `leaderboard`.
+- **`godot/scripts/ui/team_select_screen.gd`** *(nouveau)* — création / rejoindre
+  équipe avant une chasse compétitive ; redirige vers `hunt_runner` après.
+- **`godot/scripts/ui/leaderboard_screen.gd`** *(nouveau)* — classement en temps
+  réel (SignalR) ou polling 10 s (relaxed/offline) ; médailles 🥇🥈🥉 ; durée
+  formatée.
+- **`godot/scripts/ui/hunt_runner.gd`** *(modifié)* — chronomètre en mode
+  compétitif ; redirection auto vers `team_select` si pas d'équipe ; bouton
+  « Classement » ; messages anti-triche lisibles.
+- **`godot/project.godot`** *(modifié)* — autoload `CompetitiveHubClient`.
+
+#### Docs
+
+- **`docs/ROADMAP.md`** — Phase 3 entièrement cochée avec détail.
+- **`docs/CLAUDE-LOG.md`** — cette entrée.
+
+### Security & Privacy review
+
+- **Pas de nouvelle PII.** `Team.Name` est un pseudonyme libre. `TeamMember`
+  stocke uniquement `UserId` (FK existante).
+- **Autorisation.** `TeamsController` est `[Authorize]` global ; join vérifie
+  `user.FamilyId == team.FamilyId` côté serveur (pas seulement UI).
+- **JWT query string.** Le token dans `?access_token=` est limité au segment
+  `/hubs` (condition dans `OnMessageReceived`). C'est la seule façon authentifiée
+  de connecter un WebSocket sans header custom. L'exposition est identique à
+  celle d'un Bearer header sur les requêtes normales.
+- **Anti-triche.** Les rejections (`step_order_violation`, `gps_speed_implausible`)
+  retournent un message générique sans exposer de détails internes.
+- **SignalR CORS.** `AllowCredentials` ajouté — compatible avec la whitelist
+  d'origines existante. `AllowAnyOrigin` toujours interdit en prod.
+- **Logs.** Aucun PII dans les nouveaux logs (`push_warning` sur code HTTP, pas
+  sur contenu utilisateur).
+- **Données enfants.** Aucune donnée d'enfant introduite.
+
+---
+
 ## 2026-04-26 — MVP : modération super-admin + plugin Android natif + dette de tests
 
 **Branche** : `claude/mvp-moderation-android-tests`

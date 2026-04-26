@@ -50,10 +50,20 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 
 ## Phase 3 — Multi-joueur & compétition
 
-- [ ] WebSocket / SignalR pour la liveness des chasses compétitives
-- [ ] Leaderboard temps réel
-- [ ] Plusieurs équipes par famille (ex: garçons vs filles)
-- [ ] Anti-triche basique : cohérence vitesse de déplacement, ordre des étapes
+- [x] WebSocket / SignalR pour la liveness des chasses compétitives :
+      `CompetitiveHuntHub` (SignalR, `/hubs/competitive`), client GDScript
+      minimal avec negotiate + handshake + `JoinHunt` + push `LeaderboardUpdated`.
+- [x] Leaderboard temps réel : `GET /api/hunts/{id}/leaderboard` (REST),
+      push SignalR après chaque étape acceptée, `LeaderboardScreen` Godot
+      avec polling 10 s + réception SignalR en compétitif.
+- [x] Plusieurs équipes par famille (ex: garçons vs filles) : entité `Team` +
+      `TeamMember`, `TeamsController` (list / create / join / leave),
+      `TeamSelectScreen` Godot (affiché automatiquement avant le runner en mode
+      compétitif), `active_team` dans `AppState`.
+- [x] Anti-triche basique : `IAntiCheatService` / `AntiCheatService` — vérification
+      de l'ordre des étapes (`BlocksNext`) et cohérence de la vitesse GPS
+      (max 40 km/h). Appliqué côté serveur dans `POST .../steps/{id}/submit`
+      uniquement pour les chasses en mode `competitive`.
 
 ## Phase 4 — Création avancée
 

@@ -91,7 +91,7 @@ public record UpdateHuntRequest(
     [property: MaxLength(InputLimits.CluesPerHuntMax)]
     List<CreateClueRequest>? Clues);
 
-public record SubmitStepRequest(JsonElement Payload);
+public record SubmitStepRequest(JsonElement Payload, Guid? TeamId = null);
 
 public record SubmitStepResponse(bool Accepted, int AwardedPoints, string? Message);
 

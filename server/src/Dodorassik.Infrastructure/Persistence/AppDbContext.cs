@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Clue> Clues => Set<Clue>();
     public DbSet<StepSubmission> Submissions => Set<StepSubmission>();
     public DbSet<HuntScore> HuntScores => Set<HuntScore>();
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -65,6 +67,7 @@ public class AppDbContext : DbContext
             e.HasOne(s => s.Step).WithMany().HasForeignKey(s => s.HuntStepId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.Family).WithMany().HasForeignKey(s => s.FamilyId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(s => s.SubmittedBy).WithMany().HasForeignKey(s => s.SubmittedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(s => s.Team).WithMany().HasForeignKey(s => s.TeamId).OnDelete(DeleteBehavior.SetNull).IsRequired(false);
             e.HasIndex(s => new { s.HuntStepId, s.FamilyId });
         });
 
@@ -74,6 +77,23 @@ public class AppDbContext : DbContext
             e.HasOne(s => s.Hunt).WithMany(h => h.Scores).HasForeignKey(s => s.HuntId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.Family).WithMany(f => f.Scores).HasForeignKey(s => s.FamilyId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(s => new { s.HuntId, s.FamilyId }).IsUnique();
+        });
+
+        b.Entity<Team>(e =>
+        {
+            e.Property(t => t.Name).HasMaxLength(64).IsRequired();
+            e.Property(t => t.Color).HasMaxLength(7); // #RRGGBB
+            e.HasOne(t => t.Hunt).WithMany().HasForeignKey(t => t.HuntId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(t => t.Family).WithMany().HasForeignKey(t => t.FamilyId).OnDelete(DeleteBehavior.Cascade);
+            // Multiple teams per family per hunt are allowed (e.g. "Garçons" vs "Filles").
+            e.HasIndex(t => t.HuntId);
+        });
+
+        b.Entity<TeamMember>(e =>
+        {
+            e.HasKey(m => new { m.TeamId, m.UserId });
+            e.HasOne(m => m.Team).WithMany(t => t.Members).HasForeignKey(m => m.TeamId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

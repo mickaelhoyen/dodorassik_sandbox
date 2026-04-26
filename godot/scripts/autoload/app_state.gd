@@ -8,6 +8,7 @@ extends Node
 signal auth_changed(user: Dictionary)
 signal mode_changed(online: bool)
 signal active_hunt_changed(hunt: Dictionary)
+signal active_team_changed(team: Dictionary)
 
 enum Role { NONE, PLAYER, CREATOR, SUPER_ADMIN }
 
@@ -23,6 +24,8 @@ var role: Role = Role.NONE
 var auth_token: String = ""
 var online: bool = true
 var active_hunt: Dictionary = {}
+## The team the current user plays in for the active hunt (competitive mode).
+var active_team: Dictionary = {}
 
 
 func is_authenticated() -> bool:
@@ -41,6 +44,7 @@ func clear_session() -> void:
 	auth_token = ""
 	role = Role.NONE
 	active_hunt = {}
+	active_team = {}
 	auth_changed.emit(user)
 
 
@@ -53,4 +57,10 @@ func set_online(value: bool) -> void:
 
 func set_active_hunt(hunt: Dictionary) -> void:
 	active_hunt = hunt
+	active_team = {}
 	active_hunt_changed.emit(hunt)
+
+
+func set_active_team(team: Dictionary) -> void:
+	active_team = team
+	active_team_changed.emit(team)

@@ -25,6 +25,7 @@ ApiClient="*res://scripts/autoload/api_client.gd"
 OfflineCache="*res://scripts/autoload/offline_cache.gd"
 Router="*res://scripts/autoload/router.gd"
 DeviceServices="*res://scripts/autoload/device_services.gd"
+CompetitiveHubClient="*res://scripts/autoload/competitive_hub_client.gd"
 
 [display]
 

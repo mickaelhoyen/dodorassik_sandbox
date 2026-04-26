@@ -39,11 +39,10 @@ func capture_photo() -> Dictionary:
 	return {"ok": false, "error": "not_implemented_native_camera"}
 
 
-func scan_bluetooth(timeout_seconds: float = 8.0) -> Dictionary:
+func scan_bluetooth(_timeout_seconds: float = 8.0) -> Dictionary:
 	if not has_bluetooth():
 		return {"ok": false, "error": "no_bluetooth_in_editor", "stub": true}
 	# TODO: bridge to Android BluetoothLeScanner with the requested timeout.
-	_ = timeout_seconds
 	return {"ok": false, "error": "not_implemented_native_bluetooth"}
 
 

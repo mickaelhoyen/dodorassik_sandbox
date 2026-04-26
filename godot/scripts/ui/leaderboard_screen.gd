@@ -1,10 +1,5 @@
 extends "res://scripts/ui/base_screen.gd"
-## Leaderboard for a hunt. Supports both relaxed (family rankings) and
-## competitive (team rankings) modes.
-##
-## Real-time updates via CompetitiveHubClient (SignalR) in competitive mode.
-## Falls back to polling every 10 s when offline or in relaxed mode.
-##
+## Leaderboard — competitive (SignalR push) or relaxed (10 s polling).
 ## Route args: { "hunt": <hunt_dict> }
 
 const POLL_INTERVAL_SEC := 10.0
@@ -19,12 +14,12 @@ var _use_signalr: bool = false
 func build() -> void:
 	_hunt = route_args.get("hunt", AppState.active_hunt)
 	if _hunt.is_empty():
-		add_title("Classement indisponible")
-		add_button("Retour", func() -> void: Router.back())
+		add_title(tr("LB_TITLE"))
+		add_button(tr("BTN_BACK"), func() -> void: Router.back())
 		return
 
 	var is_competitive: bool = String(_hunt.get("mode", "")) == "competitive"
-	add_title("🏆 Classement")
+	add_title(tr("LB_TITLE"))
 	add_subtitle(String(_hunt.get("name", "")))
 
 	_rankings_container = VBoxContainer.new()
@@ -36,12 +31,11 @@ func build() -> void:
 	add_node(_last_updated_label)
 
 	add_separator()
-	add_button("Rafraîchir", func() -> void: _fetch_leaderboard())
-	add_button("Retour", func() -> void:
+	add_button(tr("LB_REFRESH_BTN"), func() -> void: _fetch_leaderboard())
+	add_button(tr("BTN_BACK"), func() -> void:
 		_cleanup_signalr()
 		Router.back())
 
-	# Connect to SignalR hub in competitive mode.
 	if is_competitive and AppState.is_authenticated():
 		_use_signalr = true
 		CompetitiveHubClient.leaderboard_updated.connect(_on_leaderboard_updated)
@@ -77,14 +71,14 @@ func _render_leaderboard(data: Dictionary) -> void:
 	var rankings: Array = data.get("rankings", [])
 	if rankings.is_empty():
 		var empty := Label.new()
-		empty.text = "Aucun résultat pour l'instant."
+		empty.text = tr("LB_EMPTY")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_rankings_container.add_child(empty)
 	else:
 		for entry in rankings:
 			_rankings_container.add_child(_build_entry_row(entry))
 
-	_last_updated_label.text = "Mis à jour : %s" % Time.get_datetime_string_from_system()
+	_last_updated_label.text = tr("LB_UPDATED") % Time.get_datetime_string_from_system()
 
 
 func _build_entry_row(entry: Dictionary) -> HBoxContainer:
@@ -92,8 +86,7 @@ func _build_entry_row(entry: Dictionary) -> HBoxContainer:
 	row.add_theme_constant_override("separation", 8)
 
 	var rank_lbl := Label.new()
-	var rank: int = int(entry.get("rank", 0))
-	rank_lbl.text = _rank_medal(rank)
+	rank_lbl.text = _rank_medal(int(entry.get("rank", 0)))
 	rank_lbl.custom_minimum_size = Vector2(32, 0)
 	row.add_child(rank_lbl)
 
@@ -104,9 +97,7 @@ func _build_entry_row(entry: Dictionary) -> HBoxContainer:
 	row.add_child(name_lbl)
 
 	var steps_lbl := Label.new()
-	var completed: int = int(entry.get("stepsCompleted", 0))
-	var total: int = int(entry.get("totalSteps", 0))
-	steps_lbl.text = "%d/%d" % [completed, total]
+	steps_lbl.text = "%d/%d" % [int(entry.get("stepsCompleted", 0)), int(entry.get("totalSteps", 0))]
 	steps_lbl.custom_minimum_size = Vector2(40, 0)
 	steps_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(steps_lbl)
@@ -138,7 +129,6 @@ func _rank_medal(rank: int) -> String:
 
 
 func _format_duration(iso: String) -> String:
-	# ISO 8601 duration like "00:05:32.1234567" (TimeSpan JSON default).
 	var parts: PackedStringArray = iso.split(":")
 	if parts.size() >= 3:
 		var h: int = int(parts[0])

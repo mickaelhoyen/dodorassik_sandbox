@@ -68,14 +68,23 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 ## Phase 4 — Création avancée
 
 - [ ] Éditeur de carte intégré (placer des points, dessiner un parcours)
-- [ ] Bibliothèque d'assets/énigmes partagée
+- [x] **Bibliothèque d'étapes/énigmes partagée** : entité `StepTemplate` (titre,
+      description, type, params jsonb, tags, visibilité publique), `StepTemplatesController`
+      (search `?mine=&type=&tag=`, get, create, update, delete),
+      `StepLibraryScreen` Godot avec filtres mine/type, bouton « 📚 Bibliothèque »
+      dans l'éditeur injectant le modèle comme nouvelle étape.
 - [x] **Validation par le super-admin avant publication publique** :
       workflow `Draft → Submitted → Published / Rejected`, `AdminHuntsController`
       (queue, approve, reject avec raison, takedown), endpoints
       `/api/hunts/{id}/submit-for-review`, `/withdraw`, `/archive`,
-      verrou d'édition sur Submitted/Published.
+      verrou d'édition sur Submitted/Published. `AdminModerationScreen` Godot
+      (file de modération, carte par parcours, approbation / rejet en ligne).
 - [ ] Marketplace de parcours (gratuit / payant)
-- [ ] Internationalisation (FR/EN au minimum)
+- [x] **Internationalisation FR/EN** : `translations/strings.csv` (~188 clés,
+      colonnes fr/en), autoload `AppLocale` (lecture/écriture `user://config.json`,
+      `TranslationServer.set_locale()`), sélecteur de langue sur l'écran d'accueil,
+      tous les écrans Godot migrés vers `tr()`, `project.godot` configuré avec
+      fallback fr.
 
 ## Phase 5 — Plateforme
 

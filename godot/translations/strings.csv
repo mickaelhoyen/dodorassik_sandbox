@@ -1,0 +1,187 @@
+keys,fr,en
+APP_TITLE,Dodorassik,Dodorassik
+APP_SUBTITLE,Chasse au trésor familiale en environnement réel,Real-world family treasure hunt
+BTN_BACK,Retour,Back
+BTN_CREATE,Créer,Create
+BTN_JOIN,Rejoindre,Join
+BTN_SAVE,Enregistrer,Save
+BTN_LOGOUT,Se déconnecter,Log out
+BTN_ADD,+ Ajouter,+ Add
+LBL_POINTS,Points :,Points:
+LBL_LOADING,Chargement…,Loading…
+LBL_ONLINE_MODE,Mode : %s,Mode: %s
+LBL_ONLINE,en ligne,online
+LBL_OFFLINE,hors ligne,offline
+LBL_OFFLINE_TOGGLE,Mode hors ligne,Offline mode
+LBL_LANGUAGE,Langue / Language,Langue / Language
+ROLE_PLAYER_BTN,Je joue (famille),Play (family)
+ROLE_CREATOR_BTN,Je crée un parcours,Create a trail
+ROLE_SUPERADMIN_BTN,Super-administrateur,Super-administrator
+LOGIN_TITLE,Connexion,Log in
+LOGIN_SUBTITLE,Accès créateur ou super-administrateur,Creator or super-administrator access
+LOGIN_EMAIL,Email,Email
+LOGIN_PASSWORD,Mot de passe,Password
+LOGIN_BTN,Se connecter,Log in
+LOGIN_LOADING,Connexion en cours…,Logging in…
+LOGIN_WRONG_ROLE,Ce compte n'a pas les droits requis.,This account does not have the required permissions.
+LOGIN_FAILED,Échec : %s,Failed: %s
+LOGIN_CREATE_ACCOUNT,Créer un compte,Create an account
+SIGNUP_TITLE,Créer un compte,Create an account
+SIGNUP_SUBTITLE,Rejoignez Dodorassik pour gérer vos chasses,Join Dodorassik to manage your trails
+SIGNUP_DISPLAY_NAME,Nom d'affichage (ex : Famille Dupont),Display name (e.g. The Smith Family)
+SIGNUP_EMAIL,Adresse e-mail,Email address
+SIGNUP_PASSWORD,Mot de passe (8 caractères min.),Password (min. 8 characters)
+SIGNUP_CONFIRM,Confirmer le mot de passe,Confirm password
+SIGNUP_IS_CREATOR,Je suis créateur de parcours,I am a trail creator
+SIGNUP_BTN,Créer mon compte,Create my account
+SIGNUP_ALREADY_ACCOUNT,J'ai déjà un compte — me connecter,I already have an account — log in
+SIGNUP_LOADING,Création du compte…,Creating account…
+SIGNUP_ERR_NAME,Le nom d'affichage doit contenir entre 1 et 64 caractères.,Display name must be 1–64 characters.
+SIGNUP_ERR_EMAIL,Adresse e-mail invalide.,Invalid email address.
+SIGNUP_ERR_PASSWORD_SHORT,Le mot de passe doit faire au moins 8 caractères.,Password must be at least 8 characters.
+SIGNUP_ERR_PASSWORD_MISMATCH,Les mots de passe ne correspondent pas.,Passwords do not match.
+SIGNUP_ERR_EMAIL_TAKEN,Cette adresse e-mail est déjà utilisée.,This email address is already in use.
+SIGNUP_ERR_INVALID_ROLE,Rôle invalide.,Invalid role.
+FAMILY_TITLE,Ta famille,Your family
+FAMILY_SUBTITLE,"Crée une famille ou rejoins-en une existante. Évite d'utiliser le nom de famille — un surnom suffit.","Create a family or join an existing one. Avoid using your real surname — a nickname is enough."
+FAMILY_CREATE_SECTION,Créer une nouvelle famille,Create a new family
+FAMILY_NAME_PLACEHOLDER,"Surnom (ex : Les Aventuriers)","Nickname (e.g. The Adventurers)"
+FAMILY_JOIN_SECTION,Rejoindre une famille existante,Join an existing family
+FAMILY_ID_PLACEHOLDER,ID de la famille,Family ID
+FAMILY_LATER_BTN,Plus tard,Later
+FAMILY_ERR_NAME_EMPTY,Le surnom ne peut pas être vide.,Nickname cannot be empty.
+FAMILY_ERR_ID_EMPTY,Saisis l'ID de la famille à rejoindre.,Enter the family ID to join.
+FAMILY_CREATING,Création…,Creating…
+FAMILY_JOINING,Adhésion…,Joining…
+PLAYER_HOME_TITLE,Bienvenue !,Welcome!
+PLAYER_HOME_SUBTITLE,Choisis une chasse au trésor,Choose a treasure hunt
+PLAYER_PENDING_SYNC,%d résultat(s) en attente d'envoi.,%d result(s) waiting to sync.
+PLAYER_SYNC_BTN,Synchroniser maintenant,Sync now
+PLAYER_SYNCING,Synchronisation…,Syncing…
+PLAYER_SYNCED,%d envoyés.,%d sent.
+PLAYER_CREATE_ACCOUNT_BTN,Créer un compte / Sauvegarder ma session,Create account / Save my session
+PLAYER_NO_HUNTS_OFFLINE,Aucune chasse disponible hors ligne. Connecte-toi pour en télécharger.,No hunts available offline. Connect to download some.
+PLAYER_NO_HUNTS,Aucune chasse disponible.,No hunts available.
+PLAYER_SWITCHING_OFFLINE,Hors ligne — bascule sur le cache local.,Offline — switching to local cache.
+PLAYER_DOWNLOADED,'%s' téléchargée.,'%s' downloaded.
+PLAYER_DOWNLOAD_FAILED,Échec du téléchargement.,Download failed.
+CREATOR_TITLE,Mes parcours,My trails
+CREATOR_SUBTITLE,Créez et gérez vos chasses au trésor,Create and manage your treasure hunts
+CREATOR_NEW_BTN,Nouveau parcours,New trail
+CREATOR_NO_HUNTS,Aucun parcours pour le moment.,No trails yet.
+CREATOR_HUNT_COUNT,%d parcours,%d trails
+EDITOR_TITLE,Éditeur de parcours,Trail editor
+EDITOR_NAME_PLACEHOLDER,Nom du parcours,Trail name
+EDITOR_DESC_PLACEHOLDER,"Description (histoire, public visé…)","Description (story, target audience…)"
+EDITOR_MODE_LABEL,Mode :,Mode:
+EDITOR_MODE_RELAXED,Détendu (famille),Relaxed (family)
+EDITOR_MODE_COMPETITIVE,Compétitif (chrono),Competitive (timed)
+EDITOR_STEPS_SECTION,Étapes,Steps
+EDITOR_CLUES_SECTION,Indices physiques (codes sur cartes),Physical clues (card codes)
+EDITOR_SAVE_BTN,💾  Enregistrer,💾  Save
+EDITOR_LIBRARY_BTN,📚 Bibliothèque,📚 Library
+EDITOR_NAME_REQUIRED,Le nom du parcours est obligatoire.,Trail name is required.
+EDITOR_SAVING,Sauvegarde…,Saving…
+EDITOR_SAVED,Parcours enregistré.,Trail saved.
+EDITOR_STEP_TITLE_PLACEHOLDER,Titre de l'étape,Step title
+EDITOR_STEP_DESC_PLACEHOLDER,Description / consigne (facultatif),Description / instructions (optional)
+EDITOR_STEP_POINTS,Points :,Points:
+EDITOR_CLUE_CODE_PLACEHOLDER,"CODE (ex : A1-07)","CODE (e.g. A1-07)"
+EDITOR_CLUE_TITLE_PLACEHOLDER,Titre de l'indice (visible quand trouvé),Clue title (shown when found)
+EDITOR_CLUE_REVEAL_PLACEHOLDER,Texte révélé quand l'enfant entre le code,Text revealed when the child enters the code
+EDITOR_LOCATION_LAT,Lat :,Lat:
+EDITOR_LOCATION_LON,Lon :,Lon:
+EDITOR_LOCATION_RADIUS,Rayon (m) :,Radius (m):
+EDITOR_TEXT_ANSWER,Réponse attendue :,Expected answer:
+EDITOR_TEXT_PLACEHOLDER,Laissez vide = toute réponse acceptée,Leave empty = any answer accepted
+EDITOR_BLUETOOTH_MAC,Adresses MAC :,MAC addresses:
+EDITOR_STEP_TYPE_MANUAL,Manuel (adulte valide),Manual (adult validates)
+EDITOR_STEP_TYPE_LOCATION,GPS (position),GPS (location)
+EDITOR_STEP_TYPE_PHOTO,Photo,Photo
+EDITOR_STEP_TYPE_BLUETOOTH,Balise Bluetooth,Bluetooth beacon
+EDITOR_STEP_TYPE_TEXT,Réponse texte,Text answer
+EDITOR_STEP_TYPE_CLUE,Code physique,Physical code
+RUNNER_NO_HUNT,Pas de chasse active,No active hunt
+RUNNER_TITLE_STEP,Étape %d/%d — %s,Step %d/%d — %s
+RUNNER_DONE,🎉 Bravo ! Toutes les étapes sont terminées.,🎉 Well done! All steps completed.
+RUNNER_DONE_COMPETITIVE,🎉 Terminé ! Consulte le classement.,🎉 Finished! Check the leaderboard.
+RUNNER_LEADERBOARD_FINAL_BTN,🏆 Voir le classement final,🏆 View final leaderboard
+RUNNER_LEADERBOARD_BTN,🏆 Classement,🏆 Leaderboard
+RUNNER_QUIT_BTN,Quitter,Quit
+RUNNER_COMPETITIVE_SUBTITLE,⚡ Mode compétitif — Équipe : %s,⚡ Competitive mode — Team: %s
+RUNNER_ANTICHEAT_ORDER,Anti-triche : une étape précédente n'a pas été validée.,Anti-cheat: a previous step was not validated.
+RUNNER_ANTICHEAT_GPS,Anti-triche : déplacement trop rapide détecté.,Anti-cheat: movement too fast detected.
+RUNNER_OFFLINE_QUEUED,Hors ligne — résultat mis en file d'attente.,Offline — result queued.
+RUNNER_MANUAL_BTN,✓ L'adulte valide,✓ Adult validates
+RUNNER_LOCATION_BTN,📍 Vérifier ma position,📍 Check my position
+RUNNER_GPS_UNAVAILABLE,GPS indisponible : %s,GPS unavailable: %s
+RUNNER_GPS_DISTANCE,Encore %d m à parcourir.,%d m still to go.
+RUNNER_PHOTO_BTN,📷 Prendre une photo,📷 Take a photo
+RUNNER_CAMERA_UNAVAILABLE,Caméra indisponible : %s,Camera unavailable: %s
+RUNNER_BLUETOOTH_BTN,🔵 Chercher la balise,🔵 Find the beacon
+RUNNER_BLUETOOTH_NO_WHITELIST,Aucune balise autorisée définie pour cette étape.,No authorized beacon defined for this step.
+RUNNER_BLUETOOTH_UNAVAILABLE,Bluetooth indisponible : %s,Bluetooth unavailable: %s
+RUNNER_TEXT_PLACEHOLDER,Ta réponse,Your answer
+RUNNER_TEXT_VALIDATE_BTN,Valider,Submit
+RUNNER_TEXT_WRONG,Pas tout à fait réessayez.,Not quite right — try again.
+SUPERADMIN_TITLE,Super-administrateur,Super-administrator
+SUPERADMIN_SUBTITLE,Gestion globale de la plateforme,Global platform management
+SUPERADMIN_QUEUE_BTN,File de modération,Moderation queue
+SUPERADMIN_USERS_BTN,Familles & utilisateurs,Families & users
+SUPERADMIN_STATS_BTN,Statistiques globales,Global statistics
+ADMIN_MOD_TITLE,Modération,Moderation
+ADMIN_MOD_SUBTITLE,Parcours en attente de révision,Trails awaiting review
+ADMIN_MOD_LOADING,Chargement de la file…,Loading queue…
+ADMIN_MOD_EMPTY,Aucun parcours en attente.,No trails pending review.
+ADMIN_MOD_APPROVE_BTN,✅ Approuver,✅ Approve
+ADMIN_MOD_REJECT_BTN,❌ Rejeter,❌ Reject
+ADMIN_MOD_REASON_PLACEHOLDER,Raison du rejet (obligatoire),Rejection reason (required)
+ADMIN_MOD_CONFIRM_REJECT_BTN,Confirmer le rejet,Confirm rejection
+ADMIN_MOD_APPROVING,Approbation…,Approving…
+ADMIN_MOD_REJECTING,Rejet…,Rejecting…
+ADMIN_MOD_APPROVED,Parcours approuvé et publié.,Trail approved and published.
+ADMIN_MOD_REJECTED,Parcours rejeté.,Trail rejected.
+ADMIN_MOD_ERR_REASON,La raison du rejet est obligatoire.,Rejection reason is required.
+ADMIN_MOD_TAKEDOWN_BTN,🚫 Retrait,🚫 Take down
+ADMIN_MOD_TAKINGDOWN,Retrait…,Taking down…
+ADMIN_MOD_TAKENDOWN,Parcours retiré.,Trail taken down.
+ADMIN_MOD_STEPS,%d étape(s),%d step(s)
+LB_TITLE,🏆 Classement,🏆 Leaderboard
+LB_EMPTY,Aucun résultat pour l'instant.,No results yet.
+LB_REFRESH_BTN,Rafraîchir,Refresh
+LB_UPDATED,Mis à jour : %s,Updated: %s
+TEAM_TITLE,Équipes — %s,Teams — %s
+TEAM_SUBTITLE,Mode compétitif : rejoins ou crée une équipe pour ta famille.,Competitive mode: join or create a team for your family.
+TEAM_CREATE_SECTION,Créer une équipe,Create a team
+TEAM_NAME_PLACEHOLDER,"Nom de l'équipe (ex : Les Garçons)","Team name (e.g. The Boys)"
+TEAM_COLOR_PLACEHOLDER,"Couleur hex (ex : #FF6B35) — optionnel","Hex colour (e.g. #FF6B35) — optional"
+TEAM_CREATE_BTN,Créer,Create
+TEAM_JOIN_BTN,Rejoindre,Join
+TEAM_JOIN_SECTION,Équipes existantes,Existing teams
+TEAM_LOADING,Chargement…,Loading…
+TEAM_NO_TEAMS,Aucune équipe pour l'instant — crée la première !,No teams yet — create the first one!
+TEAM_ERR_NAME,Donne un nom à ton équipe.,Give your team a name.
+TEAM_CREATING,Création…,Creating…
+TEAM_MEMBER_COUNT,%s (%d membres),%s (%d members)
+TEAM_JOINING,Rejoindre l'équipe…,Joining team…
+LIBRARY_TITLE,📚 Bibliothèque d'étapes,📚 Step library
+LIBRARY_SUBTITLE,Réutilise des étapes créées par la communauté,Reuse steps created by the community
+LIBRARY_FILTER_ALL,Tous les types,All types
+LIBRARY_MINE_BTN,Mes modèles,My templates
+LIBRARY_COMMUNITY_BTN,Communauté,Community
+LIBRARY_LOADING,Chargement…,Loading…
+LIBRARY_EMPTY,Aucun modèle pour ce type.,No templates for this type.
+LIBRARY_USE_BTN,Utiliser,Use
+LIBRARY_SAVE_STEP_BTN,💾 Sauvegarder comme modèle,💾 Save as template
+LIBRARY_SAVE_TITLE_PLACEHOLDER,Titre du modèle,Template title
+LIBRARY_SAVE_BTN,Publier comme modèle,Publish as template
+LIBRARY_SAVING,Sauvegarde…,Saving…
+LIBRARY_SAVED,Modèle sauvegardé.,Template saved.
+LIBRARY_PUBLIC_TOGGLE,Partager avec la communauté,Share with community
+LIBRARY_DELETE_BTN,Supprimer,Delete
+LIBRARY_DELETING,Suppression…,Deleting…
+LIBRARY_DELETED,Modèle supprimé.,Template deleted.
+LIBRARY_BY,Par %s,By %s
+EDITOR_NEW_STEP_TITLE,Nouvelle étape,New step
+EDITOR_DEFAULT_STEP_TITLE,Étape,Step
+EDITOR_ERR_SAVE,Erreur : %s,Error: %s

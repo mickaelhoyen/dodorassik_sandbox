@@ -1,12 +1,9 @@
 extends "res://scripts/ui/base_screen.gd"
-## Player dashboard. Shows hunts available locally (offline cache) and, if
-## online, the catalogue from the server. Players don't authenticate by
-## default — anyone in the family can use the phone to assist the kids.
 
 
 func build() -> void:
-	add_title("Bienvenue !")
-	add_subtitle("Choisis une chasse au trésor")
+	add_title(tr("PLAYER_HOME_TITLE"))
+	add_subtitle(tr("PLAYER_HOME_SUBTITLE"))
 
 	if AppState.online:
 		_load_remote()
@@ -16,27 +13,27 @@ func build() -> void:
 	add_separator()
 	var pending := OfflineCache.pending_count()
 	if pending > 0:
-		add_subtitle("%d résultat(s) en attente d'envoi." % pending)
-		add_button("Synchroniser maintenant", func() -> void:
-			set_status("Synchronisation…")
+		add_subtitle(tr("PLAYER_PENDING_SYNC") % pending)
+		add_button(tr("PLAYER_SYNC_BTN"), func() -> void:
+			set_status(tr("PLAYER_SYNCING"))
 			var sent: int = await OfflineCache.flush_pending()
-			set_status("%d envoyés." % sent))
+			set_status(tr("PLAYER_SYNCED") % sent))
 
 	add_separator()
 	if not AppState.is_authenticated():
-		add_button("Créer un compte / Sauvegarder ma session",
+		add_button(tr("PLAYER_CREATE_ACCOUNT_BTN"),
 			func() -> void: Router.go("signup", {
 				"target_role": AppState.Role.PLAYER,
 				"back_to": "player_home",
 			}))
-	add_button("Retour", func() -> void: Router.go("role_selection"))
+	add_button(tr("BTN_BACK"), func() -> void: Router.go("role_selection"))
 
 
 func _load_remote() -> void:
-	set_status("Chargement…")
+	set_status(tr("LBL_LOADING"))
 	var resp: Dictionary = await ApiClient.list_hunts()
 	if not resp["ok"]:
-		set_status("Hors ligne — bascule sur le cache local.", true)
+		set_status(tr("PLAYER_SWITCHING_OFFLINE"), true)
 		_load_local()
 		return
 	var hunts: Array = resp["data"] if typeof(resp["data"]) == TYPE_ARRAY else []
@@ -46,23 +43,23 @@ func _load_remote() -> void:
 func _load_local() -> void:
 	var hunts := OfflineCache.list_local_hunts()
 	if hunts.is_empty():
-		set_status("Aucune chasse disponible hors ligne. Connecte-toi pour en télécharger.", true)
+		set_status(tr("PLAYER_NO_HUNTS_OFFLINE"), true)
 		return
 	_render_hunts(hunts, false)
 
 
 func _render_hunts(hunts: Array, can_download: bool) -> void:
 	if hunts.is_empty():
-		set_status("Aucune chasse disponible.")
+		set_status(tr("PLAYER_NO_HUNTS"))
 		return
 	for hunt in hunts:
-		var name := String(hunt.get("name", "Sans titre"))
-		add_button("▶ %s" % name, func() -> void:
+		var name := String(hunt.get("name", "?"))
+		add_button(tr("PLAYER_PLAY_BTN") % name, func() -> void:
 			AppState.set_active_hunt(hunt)
 			Router.go("hunt_runner", {"hunt": hunt}))
 		if can_download:
-			add_button("⬇ Télécharger '%s' (offline)" % name, func() -> void:
+			add_button(tr("PLAYER_DOWNLOAD_BTN") % name, func() -> void:
 				if OfflineCache.save_hunt(hunt):
-					set_status("'%s' téléchargée." % name)
+					set_status(tr("PLAYER_DOWNLOADED") % name)
 				else:
-					set_status("Échec du téléchargement.", true))
+					set_status(tr("PLAYER_DOWNLOAD_FAILED"), true))

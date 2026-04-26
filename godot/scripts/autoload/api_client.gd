@@ -123,6 +123,41 @@ func get_leaderboard(hunt_id: String) -> Dictionary:
 	return await request("GET", "/api/hunts/%s/leaderboard" % hunt_id)
 
 
+# ---------- Step Templates ----------
+
+func search_step_templates(mine_only: bool = false, type_filter: String = "") -> Dictionary:
+	var qs := "?mine=%s" % ("true" if mine_only else "false")
+	if not type_filter.is_empty():
+		qs += "&type=%s" % type_filter
+	return await request("GET", "/api/step-templates" + qs)
+
+
+func get_step_template(template_id: String) -> Dictionary:
+	return await request("GET", "/api/step-templates/%s" % template_id)
+
+
+func create_step_template(payload: Dictionary) -> Dictionary:
+	return await request("POST", "/api/step-templates", payload)
+
+
+func delete_step_template(template_id: String) -> Dictionary:
+	return await request("DELETE", "/api/step-templates/%s" % template_id)
+
+
+# ---------- Admin moderation ----------
+
+func admin_moderation_queue() -> Dictionary:
+	return await request("GET", "/api/admin/hunts")
+
+
+func admin_approve_hunt(hunt_id: String) -> Dictionary:
+	return await request("POST", "/api/admin/hunts/%s/approve" % hunt_id)
+
+
+func admin_reject_hunt(hunt_id: String, reason: String) -> Dictionary:
+	return await request("POST", "/api/admin/hunts/%s/reject" % hunt_id, {"reason": reason})
+
+
 # ---------- Core request ----------
 
 func request(method: String, path: String, body: Variant = null) -> Dictionary:

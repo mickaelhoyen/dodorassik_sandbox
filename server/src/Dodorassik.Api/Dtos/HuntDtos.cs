@@ -16,7 +16,8 @@ public record HuntDto(
     string? LocationLabel,
     DateTime? EventStartUtc,
     DateTime? EventEndUtc,
-    List<HuntStepDto> Steps);
+    List<HuntStepDto> Steps,
+    List<ClueDto> Clues);
 
 public record HuntStepDto(
     Guid Id,
@@ -28,19 +29,27 @@ public record HuntStepDto(
     int Points,
     bool BlocksNext);
 
+public record ClueDto(
+    Guid Id,
+    string Code,
+    string Title,
+    string Reveal,
+    int Points);
+
 public record CreateHuntRequest(
     [property: Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
     string Name,
     [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
     string? Description,
     string? Mode,
-    // "permanent" (default) or "event"
     string? Category,
     string? LocationLabel,
     DateTime? EventStartUtc,
     DateTime? EventEndUtc,
     [property: MaxLength(InputLimits.StepsPerHuntMax)]
-    List<CreateHuntStepRequest>? Steps);
+    List<CreateHuntStepRequest>? Steps,
+    [property: MaxLength(InputLimits.CluesPerHuntMax)]
+    List<CreateClueRequest>? Clues);
 
 public record CreateHuntStepRequest(
     Guid? Id,
@@ -54,6 +63,30 @@ public record CreateHuntStepRequest(
     [property: Range(0, 1_000)]
     int? Points,
     bool? BlocksNext);
+
+public record CreateClueRequest(
+    Guid? Id,
+    [property: Required, StringLength(InputLimits.ClueCodeMaxLength, MinimumLength = 1)]
+    string Code,
+    [property: StringLength(InputLimits.ClueTitleMaxLength)]
+    string? Title,
+    [property: StringLength(InputLimits.ClueRevealMaxLength)]
+    string? Reveal,
+    [property: Range(0, 1_000)]
+    int? Points);
+
+/// <summary>Full replace: fields absent from the request are cleared/reset.</summary>
+public record UpdateHuntRequest(
+    [property: Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
+    string Name,
+    [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
+    string? Description,
+    string? Mode,
+    string? LocationLabel,
+    [property: MaxLength(InputLimits.StepsPerHuntMax)]
+    List<CreateHuntStepRequest>? Steps,
+    [property: MaxLength(InputLimits.CluesPerHuntMax)]
+    List<CreateClueRequest>? Clues);
 
 public record SubmitStepRequest(JsonElement Payload);
 
@@ -75,6 +108,9 @@ public static class HuntMappings
         h.Steps
             .OrderBy(s => s.Order)
             .Select(s => s.ToDto())
+            .ToList(),
+        h.Clues
+            .Select(c => c.ToDto())
             .ToList());
 
     public static HuntStepDto ToDto(this HuntStep s)
@@ -96,6 +132,13 @@ public static class HuntMappings
             s.Points,
             s.BlocksNext);
     }
+
+    public static ClueDto ToDto(this Clue c) => new(
+        c.Id,
+        c.Code,
+        c.Title,
+        c.Reveal,
+        c.Points);
 
     public static StepType ParseStepType(string raw) => raw.ToLowerInvariant() switch
     {

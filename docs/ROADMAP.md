@@ -28,11 +28,16 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 - [x] Sélection / création de famille à la connexion (`FamiliesController`
       + écran `family_select` côté Godot).
 - [x] Migration projet vers Godot 4.6.
-- [ ] Création réelle d'une chasse depuis l'éditeur Godot avec steps + clues
-      (l'éditeur actuel sauve les steps mais ne gère pas encore les clues).
-- [ ] Implémentation native du plugin Android (compiler l'AAR, tester GPS
-      sur appareil réel).
-- [ ] Build Android signé (debug) documenté avec presets d'export.
+- [x] Création réelle d'une chasse depuis l'éditeur Godot avec steps + clues :
+      éditeur réécrit avec formulaire par step (type, titre, description,
+      params type-spécifiques), gestion des clues physiques (code, titre,
+      reveal, points), PUT pour mise à jour des chasses existantes, upsert
+      server-side des steps/clues avec conservation des ids.
+- [x] Build Android signé (debug) documenté avec presets d'export Godot 4.6,
+      génération du keystore debug, install ADB, filtrage logcat.
+- [ ] Implémentation native du plugin Android vérifiée sur appareil réel
+      (GPS, caméra, Bluetooth). Structure Java compilable avec Gradle,
+      reste à tester sur appareil physique.
 
 ## Phase 3 — Multi-joueur & compétition
 

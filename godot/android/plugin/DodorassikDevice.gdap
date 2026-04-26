@@ -1,0 +1,14 @@
+[config]
+
+name="DodorassikDevice"
+binary_type="local"
+binary="dodorassik-device-release.aar"
+
+[dependencies]
+
+local=[]
+remote=[
+    "com.google.android.gms:play-services-location:21.3.0",
+    "androidx.core:core:1.13.1"
+]
+custom_maven_repos=[]

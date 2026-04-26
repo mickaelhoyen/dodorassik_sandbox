@@ -48,6 +48,8 @@ func _build_screen(name: String, args: Dictionary) -> Control:
 			script = load("res://scripts/ui/role_selection_screen.gd")
 		"login":
 			script = load("res://scripts/ui/login_screen.gd")
+		"family_select":
+			script = load("res://scripts/ui/family_select_screen.gd")
 		"super_admin_home":
 			script = load("res://scripts/ui/super_admin_home.gd")
 		"creator_home":

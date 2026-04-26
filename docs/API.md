@@ -78,6 +78,39 @@ Réponse `200`:
 { "accepted": true, "awardedPoints": 10, "message": null }
 ```
 
+## Users (RGPD)
+
+### `GET /api/users/me` *(authentifié)*
+Retourne le profil de l'utilisateur courant.
+
+### `PATCH /api/users/me` *(authentifié)*
+Met à jour `displayName` et/ou `email`.
+
+### `GET /api/users/me/export` *(authentifié)*
+Portabilité : JSON complet des données concernant le compte.
+
+### `DELETE /api/users/me?confirm=yes` *(authentifié)*
+Effacement RGPD. Anonymise les soumissions et hunts du créateur, supprime
+le compte. La query `confirm=yes` est obligatoire.
+
+## Families
+
+### `GET /api/families/me` *(authentifié)*
+Retourne la famille de l'utilisateur ou `404`.
+
+### `POST /api/families` *(authentifié)*
+Crée une famille et y rattache l'utilisateur.
+
+```json
+{ "name": "Les Aventuriers" }
+```
+
+### `POST /api/families/{id}/join` *(authentifié)*
+Rejoint une famille existante via son identifiant.
+
+### `POST /api/families/leave` *(authentifié)*
+Quitte la famille courante.
+
 ## Health
 
 ### `GET /api/health`

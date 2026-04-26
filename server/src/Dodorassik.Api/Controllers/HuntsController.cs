@@ -1,10 +1,13 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Dodorassik.Api.Dtos;
+using Dodorassik.Api.Validation;
 using Dodorassik.Core.Domain;
 using Dodorassik.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dodorassik.Api.Controllers;
@@ -39,10 +42,10 @@ public class HuntsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Creator,SuperAdmin")]
+    [Authorize(Roles = "creator,super_admin")]
     public async Task<ActionResult<HuntDto>> Create([FromBody] CreateHuntRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest(new { error = "name_required" });
+        if (!ModelState.IsValid) return BadRequest(new { error = "invalid_input" });
 
         var creatorId = CurrentUserId();
         if (creatorId is null) return Unauthorized();
@@ -58,16 +61,23 @@ public class HuntsController : ControllerBase
 
         if (req.Steps is not null)
         {
+            if (req.Steps.Count > InputLimits.StepsPerHuntMax)
+                return BadRequest(new { error = "too_many_steps" });
+
             var order = 0;
             foreach (var s in req.Steps)
             {
+                var paramsJson = s.Params?.GetRawText() ?? "{}";
+                if (Encoding.UTF8.GetByteCount(paramsJson) > InputLimits.JsonParamsMaxBytes)
+                    return BadRequest(new { error = "step_params_too_large" });
+
                 hunt.Steps.Add(new HuntStep
                 {
                     Order = order++,
                     Title = s.Title,
                     Description = s.Description ?? string.Empty,
                     Type = HuntMappings.ParseStepType(s.Type),
-                    ParamsJson = s.Params?.GetRawText() ?? "{}",
+                    ParamsJson = paramsJson,
                     Points = s.Points ?? 10,
                     BlocksNext = s.BlocksNext ?? true,
                 });
@@ -80,7 +90,7 @@ public class HuntsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/publish")]
-    [Authorize(Roles = "Creator,SuperAdmin")]
+    [Authorize(Roles = "creator,super_admin")]
     public async Task<IActionResult> Publish(Guid id)
     {
         var hunt = await _db.Hunts.FindAsync(id);
@@ -93,8 +103,13 @@ public class HuntsController : ControllerBase
 
     [HttpPost("{huntId:guid}/steps/{stepId:guid}/submit")]
     [Authorize]
+    [EnableRateLimiting("submit")]
     public async Task<ActionResult<SubmitStepResponse>> Submit(Guid huntId, Guid stepId, [FromBody] SubmitStepRequest req)
     {
+        var payloadText = req.Payload.GetRawText();
+        if (Encoding.UTF8.GetByteCount(payloadText) > InputLimits.JsonPayloadMaxBytes)
+            return BadRequest(new { error = "payload_too_large" });
+
         var step = await _db.HuntSteps.FirstOrDefaultAsync(s => s.Id == stepId && s.HuntId == huntId);
         if (step is null) return NotFound();
 
@@ -116,7 +131,7 @@ public class HuntsController : ControllerBase
             SubmittedById = user.Id,
             Accepted = accepted,
             AwardedPoints = awarded,
-            PayloadJson = req.Payload.GetRawText(),
+            PayloadJson = payloadText,
             ClientCreatedAtUtc = DateTime.UtcNow,
         };
         _db.Submissions.Add(submission);

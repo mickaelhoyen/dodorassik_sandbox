@@ -118,7 +118,16 @@ func _bluetooth_validator(step: Dictionary) -> Node:
 	var btn := Button.new()
 	btn.text = "🔵 Chercher la balise"
 	btn.pressed.connect(func() -> void:
-		var resp: Dictionary = await DeviceServices.scan_bluetooth()
+		var params: Dictionary = step.get("params", {})
+		var raw: Variant = params.get("allowed_addresses", [])
+		var whitelist := PackedStringArray()
+		if typeof(raw) == TYPE_ARRAY:
+			for v in raw:
+				whitelist.append(String(v))
+		if whitelist.is_empty():
+			set_status("Aucune balise autorisée définie pour cette étape.", true)
+			return
+		var resp: Dictionary = await DeviceServices.scan_bluetooth(whitelist)
 		if not resp["ok"]:
 			set_status("Bluetooth indisponible: %s" % resp.get("error", "?"), true)
 			return

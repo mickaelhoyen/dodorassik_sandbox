@@ -1,10 +1,10 @@
 # Client Godot — Dodorassik
 
-Projet Godot 4 (GDScript). Cible principale : Android (téléphone).
+Projet **Godot 4.6** (GDScript). Cible principale : Android (téléphone).
 
 ## Lancer en local
 
-1. Installer Godot 4.3+
+1. Installer Godot 4.6
 2. Ouvrir ce dossier dans Godot
 3. F5 (lance `scenes/common/main.tscn`)
 

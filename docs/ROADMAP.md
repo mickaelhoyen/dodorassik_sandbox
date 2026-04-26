@@ -13,12 +13,26 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 
 ## Phase 2 — Boucle de jeu jouable
 
-- [ ] Premières migrations EF Core générées et committées
-- [ ] Tests d'intégration `WebApplicationFactory` sur `AuthController` et `HuntsController`
-- [ ] Création réelle d'une chasse depuis l'éditeur Godot (steps + clues)
-- [ ] Plugin Android pour `DeviceServices` : GPS + caméra
-- [ ] Build Android signé (debug) documenté
-- [ ] Sélection de famille à la connexion (multi-adultes, multi-enfants)
+- [x] **Cadre security/privacy by design** : `CLAUDE.md`, `docs/SECURITY.md`,
+      `docs/PRIVACY.md`, journal `docs/CLAUDE-LOG.md`.
+- [x] Audit + correctifs sur l'existant : CORS allowlist par environnement,
+      rate limiting natif .NET 8, validation DTO complète, messages d'erreur
+      anti-énumération, `MapInboundClaims = false`, claims rôle en snake_case.
+- [x] Endpoints RGPD : `GET/PATCH/DELETE /api/users/me`, export portabilité.
+- [x] Tests d'intégration `WebApplicationFactory` (Auth, Hunts, Users — InMemory).
+- [x] Migrations EF Core : scaffolding (`DesignTimeDbContextFactory`,
+      `db/init.sql`, README de génération). Génération à lancer en local
+      (`dotnet ef migrations add Initial`) puis commit.
+- [x] Plugin Android scaffold (`godot/android/plugin/`) : permissions,
+      modules GPS / Camera / Bluetooth, intégration `DeviceServices` runtime.
+- [x] Sélection / création de famille à la connexion (`FamiliesController`
+      + écran `family_select` côté Godot).
+- [x] Migration projet vers Godot 4.6.
+- [ ] Création réelle d'une chasse depuis l'éditeur Godot avec steps + clues
+      (l'éditeur actuel sauve les steps mais ne gère pas encore les clues).
+- [ ] Implémentation native du plugin Android (compiler l'AAR, tester GPS
+      sur appareil réel).
+- [ ] Build Android signé (debug) documenté avec presets d'export.
 
 ## Phase 3 — Multi-joueur & compétition
 

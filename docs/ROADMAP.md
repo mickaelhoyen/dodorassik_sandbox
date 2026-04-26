@@ -51,6 +51,16 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 
 ## Phase 5 — Plateforme
 
+- [x] **Inscription créateur depuis Godot** : écran `signup_screen.gd` avec
+      sélection de rôle Player/Creator, auto-login post-inscription.
+- [x] **Sauvegarde session joueur** : bouton "Créer un compte" accessible
+      depuis `player_home` sans authentification préalable.
+- [x] **Interface web publique** (Razor Pages intégrées à l'API) :
+      - `/` → page publique listant événements en cours et parcours permanents.
+      - `/Signup` → formulaire d'inscription créateur/joueur côté web.
+      - `GET /api/public/hunts` → endpoint JSON pour le catalogue public.
+- [x] **HuntCategory** : distinction `Permanent` / `Event` sur les chasses,
+      avec `EventStartUtc` / `EventEndUtc` pour les événements temporaires.
 - [ ] Console super-admin web (séparée du jeu) — peut être un projet Blazor
 - [ ] Statistiques d'usage (familles actives, parcours populaires)
 - [ ] CI/CD GitHub Actions (build serveur + export Godot Android)

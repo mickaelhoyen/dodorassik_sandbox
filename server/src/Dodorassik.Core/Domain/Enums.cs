@@ -36,3 +36,11 @@ public enum HuntMode
     /// <summary>Competitive: timing and ordering matter.</summary>
     Competitive = 1
 }
+
+public enum HuntCategory
+{
+    /// <summary>Always available published hunt (e.g. a permanent nature trail).</summary>
+    Permanent = 0,
+    /// <summary>Time-bounded event hunt (festival, seasonal edition…).</summary>
+    Event = 1,
+}

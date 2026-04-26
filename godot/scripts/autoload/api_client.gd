@@ -43,11 +43,12 @@ func login(email: String, password: String) -> Dictionary:
 	})
 
 
-func register(email: String, password: String, display_name: String) -> Dictionary:
+func register(email: String, password: String, display_name: String, role: String = "player") -> Dictionary:
 	return await request("POST", "/api/auth/register", {
 		"email": email,
 		"password": password,
 		"displayName": display_name,
+		"role": role,
 	})
 
 

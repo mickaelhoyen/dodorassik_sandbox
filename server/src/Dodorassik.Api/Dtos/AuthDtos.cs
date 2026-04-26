@@ -9,7 +9,10 @@ public record RegisterRequest(
     [property: Required, StringLength(InputLimits.PasswordMaxLength, MinimumLength = InputLimits.PasswordMinLength)]
     string Password,
     [property: Required, StringLength(InputLimits.DisplayNameMaxLength, MinimumLength = InputLimits.DisplayNameMinLength)]
-    string DisplayName);
+    string DisplayName,
+    // Accepted values: "player" (default) or "creator". SuperAdmin cannot self-register.
+    [property: StringLength(32)]
+    string? Role = null);
 
 public record LoginRequest(
     [property: Required, EmailAddress, StringLength(InputLimits.EmailMaxLength)]

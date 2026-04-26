@@ -110,9 +110,10 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // -----------------------------------------------------------------------
-// MVC + Swagger
+// MVC + Razor Pages + Swagger
 // -----------------------------------------------------------------------
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -130,11 +131,13 @@ else
 }
 
 app.UseRouting();
+app.UseStaticFiles();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapRazorPages();
 
 app.Run();
 

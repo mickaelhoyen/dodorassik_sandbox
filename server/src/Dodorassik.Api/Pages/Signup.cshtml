@@ -1,0 +1,62 @@
+@page
+@model SignupModel
+@{
+    ViewData["Title"] = "Créer un compte";
+}
+
+<h1>Créer un compte</h1>
+<p class="lead">Rejoignez Dodorassik pour créer et gérer vos propres chasses au trésor familiales.</p>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-error">@Model.ErrorMessage</div>
+    }
+
+    <div class="form-card">
+        <form method="post">
+            <div class="form-group">
+                <label asp-for="Input.DisplayName">Nom d'affichage</label>
+                <input asp-for="Input.DisplayName" autocomplete="nickname" placeholder="Ex: Famille Dupont" />
+                <span asp-validation-for="Input.DisplayName" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Email">Adresse e-mail</label>
+                <input asp-for="Input.Email" type="email" autocomplete="email" placeholder="contact@exemple.fr" />
+                <span asp-validation-for="Input.Email" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Password">Mot de passe</label>
+                <input asp-for="Input.Password" type="password" autocomplete="new-password" />
+                <span class="form-hint">8 caractères minimum.</span>
+                <span asp-validation-for="Input.Password" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.ConfirmPassword">Confirmer le mot de passe</label>
+                <input asp-for="Input.ConfirmPassword" type="password" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Role">Type de compte</label>
+                <select asp-for="Input.Role">
+                    <option value="creator">Créateur — je veux concevoir des parcours</option>
+                    <option value="player">Joueur — je veux sauvegarder mes sessions</option>
+                </select>
+                <span class="form-hint">
+                    Les enfants ne créent pas de compte. Le rôle Super-administrateur est attribué par l'équipe Dodorassik.
+                </span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Créer mon compte</button>
+        </form>
+    </div>
+}

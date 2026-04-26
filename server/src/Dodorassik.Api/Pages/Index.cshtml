@@ -1,0 +1,68 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Chasses &amp; Événements";
+}
+
+<h1>🗺️ Chasses au trésor</h1>
+<p class="lead">Découvrez les parcours disponibles et les événements en cours.</p>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-error">@Model.ErrorMessage</div>
+}
+
+<h2>⚡ Événements en cours</h2>
+@if (Model.Events.Count == 0)
+{
+    <p class="empty-state">Aucun événement en cours pour le moment. Revenez bientôt !</p>
+}
+else
+{
+    <div class="hunt-grid">
+        @foreach (var h in Model.Events)
+        {
+            <div class="hunt-card">
+                <span class="badge badge-event">Événement</span>
+                <h3>@h.Name</h3>
+                <p>@(h.Description.Length > 120 ? h.Description[..120] + "…" : h.Description)</p>
+                <div class="meta">
+                    @if (h.LocationLabel is not null) { <span>📍 @h.LocationLabel &nbsp;</span> }
+                    <span>@h.StepCount étape(s)</span>
+                    @if (h.EventEndUtc.HasValue)
+                    {
+                        <br /><span>Jusqu'au @h.EventEndUtc.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<h2>🌳 Parcours permanents</h2>
+@if (Model.Permanent.Count == 0)
+{
+    <p class="empty-state">Aucun parcours permanent disponible pour le moment.</p>
+}
+else
+{
+    <div class="hunt-grid">
+        @foreach (var h in Model.Permanent)
+        {
+            <div class="hunt-card">
+                <span class="badge badge-permanent">Parcours</span>
+                <h3>@h.Name</h3>
+                <p>@(h.Description.Length > 120 ? h.Description[..120] + "…" : h.Description)</p>
+                <div class="meta">
+                    @if (h.LocationLabel is not null) { <span>📍 @h.LocationLabel &nbsp;</span> }
+                    <span>@h.StepCount étape(s)</span>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<p style="margin-top:2rem;">
+    Vous souhaitez créer vos propres parcours ?
+    <a href="/Signup">Créez un compte créateur</a> et démarrez dès aujourd'hui.
+</p>

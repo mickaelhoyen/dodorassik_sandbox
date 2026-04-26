@@ -56,6 +56,10 @@ public class HuntsController : ControllerBase
             Description = req.Description ?? string.Empty,
             CreatorId = creatorId.Value,
             Mode = HuntMappings.ParseHuntMode(req.Mode),
+            Category = HuntMappings.ParseHuntCategory(req.Category),
+            LocationLabel = req.LocationLabel?.Trim(),
+            EventStartUtc = req.EventStartUtc,
+            EventEndUtc = req.EventEndUtc,
             Status = HuntStatus.Draft,
         };
 

@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS "Hunts" (
     "LocationLabel"   text          NULL,
     "Status"          integer       NOT NULL,
     "Mode"            integer       NOT NULL,
+    "Category"        integer       NOT NULL DEFAULT 0,
+    "EventStartUtc"   timestamptz   NULL,
+    "EventEndUtc"     timestamptz   NULL,
     "CreatedAtUtc"    timestamptz   NOT NULL,
     "UpdatedAtUtc"    timestamptz   NOT NULL
 );

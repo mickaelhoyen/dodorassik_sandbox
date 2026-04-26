@@ -37,7 +37,7 @@ func back() -> void:
 	if _stack.size() <= 1:
 		return
 	_stack.pop_back()
-	var prev := _stack.pop_back()
+	var prev: String = _stack.pop_back()
 	go(prev)
 
 

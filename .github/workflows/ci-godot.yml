@@ -1,11 +1,11 @@
 name: CI — Godot
 
+# Temporarily disabled: Godot 4.6-stable does not yet have a published binary
+# on GitHub Releases, causing the download step to 404. Re-enable and update
+# GODOT_VERSION once the release is available at:
+# https://github.com/godotengine/godot/releases
 on:
-  push:
-    branches: [main, "claude/**", "feat/**", "fix/**"]
-    paths: ["godot/**"]
-  pull_request:
-    paths: ["godot/**"]
+  workflow_dispatch:
 
 env:
   GODOT_VERSION: "4.6"

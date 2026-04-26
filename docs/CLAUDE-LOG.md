@@ -16,7 +16,7 @@
 ## 2026-04-26 — MVP : modération super-admin + plugin Android natif + dette de tests
 
 **Branche** : `claude/mvp-moderation-android-tests`
-**Commit** : (en cours)
+**Commit** : `615fc3f`
 
 ### Requête utilisateur
 

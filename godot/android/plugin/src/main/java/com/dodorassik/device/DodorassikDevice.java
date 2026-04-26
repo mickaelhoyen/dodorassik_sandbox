@@ -35,6 +35,7 @@ public class DodorassikDevice extends GodotPlugin {
     private final LocationModule location;
     private final CameraModule camera;
     private final BluetoothModule bluetooth;
+    private final MapModule map;
 
     public DodorassikDevice(Godot godot) {
         super(godot);
@@ -42,6 +43,7 @@ public class DodorassikDevice extends GodotPlugin {
         location = new LocationModule(activity, this);
         camera = new CameraModule(activity, this);
         bluetooth = new BluetoothModule(activity, this);
+        map = new MapModule(activity, this);
     }
 
     @NonNull
@@ -57,6 +59,8 @@ public class DodorassikDevice extends GodotPlugin {
         signals.add(new SignalInfo("location_updated", Double.class, Double.class, Double.class));
         signals.add(new SignalInfo("photo_captured", String.class, Long.class));
         signals.add(new SignalInfo("bluetooth_device_found", String.class, String.class, Integer.class));
+        signals.add(new SignalInfo("map_confirmed", String.class));
+        signals.add(new SignalInfo("map_cancelled"));
         return signals;
     }
 
@@ -84,6 +88,21 @@ public class DodorassikDevice extends GodotPlugin {
         return bluetooth.scan(whitelist, (long) (timeoutSeconds * 1000));
     }
 
+    @UsedByGodot
+    public void show_map() {
+        map.showMap();
+    }
+
+    @UsedByGodot
+    public void hide_map() {
+        map.hideMap();
+    }
+
+    @UsedByGodot
+    public void load_map_steps(String stepsJson) {
+        map.loadSteps(stepsJson);
+    }
+
     // ---------- Internal helpers (called by modules) ----------
 
     void emitLocation(double lat, double lon, double accuracy) {
@@ -96,5 +115,13 @@ public class DodorassikDevice extends GodotPlugin {
 
     void emitBluetoothDevice(String name, String address, int rssi) {
         emitSignal("bluetooth_device_found", name, address, rssi);
+    }
+
+    void emitMapConfirmed(String resultJson) {
+        emitSignal("map_confirmed", resultJson);
+    }
+
+    void emitMapCancelled() {
+        emitSignal("map_cancelled");
     }
 }

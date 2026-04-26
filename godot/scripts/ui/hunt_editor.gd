@@ -46,6 +46,10 @@ func build() -> void:
 	_steps = _hunt.get("steps", []).duplicate(true) if _hunt.has("steps") else []
 	_clues = _hunt.get("clues", []).duplicate(true) if _hunt.has("clues") else []
 
+	if DeviceServices.has_map():
+		DeviceServices.map_confirmed.connect(_on_map_confirmed)
+		DeviceServices.map_cancelled.connect(_on_map_cancelled)
+
 	add_title(tr("EDITOR_TITLE"))
 
 	# ---- Metadata -----------------------------------------------------------
@@ -79,16 +83,25 @@ func build() -> void:
 	var steps_hdr := _make_section_header(tr("EDITOR_STEPS_SECTION"), func() -> void: _add_step())
 	add_node(steps_hdr)
 
-	# Library button row
-	var lib_row := HBoxContainer.new()
+	# Library + map buttons row
+	var tools_row := HBoxContainer.new()
+	tools_row.add_theme_constant_override("separation", 8)
+
 	var lib_btn := Button.new()
 	lib_btn.text = tr("EDITOR_LIBRARY_BTN")
 	lib_btn.pressed.connect(func() -> void:
 		Router.go("step_library", {
 			"on_use": func(tmpl: Dictionary) -> void: _inject_template(tmpl),
 		}))
-	lib_row.add_child(lib_btn)
-	add_node(lib_row)
+	tools_row.add_child(lib_btn)
+
+	if DeviceServices.has_map():
+		var map_btn := Button.new()
+		map_btn.text = tr("MAP_EDITOR_OPEN_BTN")
+		map_btn.pressed.connect(func() -> void: _open_map())
+		tools_row.add_child(map_btn)
+
+	add_node(tools_row)
 
 	_steps_box = VBoxContainer.new()
 	_steps_box.add_theme_constant_override("separation", 4)
@@ -479,6 +492,56 @@ func _save() -> void:
 		_render_clues()
 
 	set_status(tr("EDITOR_SAVED"))
+
+
+# ============================================================  Helpers  ======
+
+# ============================================================  Map  =========
+
+func _open_map() -> void:
+	var location_steps: Array = []
+	for i in _steps.size():
+		var s: Dictionary = _steps[i]
+		if String(s.get("type", "")) != "location":
+			continue
+		var p: Dictionary = s.get("params", {}) if typeof(s.get("params", {})) == TYPE_DICTIONARY else {}
+		location_steps.append({
+			"stepIndex": i,
+			"title": String(s.get("title", "Étape %d" % (i + 1))),
+			"lat": float(p.get("lat", 0.0)),
+			"lon": float(p.get("lon", 0.0)),
+			"radius_m": int(p.get("radius_m", 30)),
+		})
+
+	if location_steps.is_empty():
+		set_status(tr("MAP_EDITOR_NO_LOCATION"), true)
+		return
+
+	DeviceServices.load_map_steps(JSON.stringify(location_steps))
+	DeviceServices.show_map()
+
+
+func _on_map_confirmed(result_json: String) -> void:
+	DeviceServices.hide_map()
+	var result: Variant = JSON.parse_string(result_json)
+	if typeof(result) != TYPE_ARRAY:
+		set_status(tr("MAP_EDITOR_ERR_PARSE"), true)
+		return
+	for entry in result:
+		var idx: int = int(entry.get("stepIndex", -1))
+		if idx < 0 or idx >= _steps.size():
+			continue
+		if typeof(_steps[idx].get("params", null)) != TYPE_DICTIONARY:
+			_steps[idx]["params"] = {}
+		_steps[idx]["params"]["lat"] = float(entry.get("lat", 0.0))
+		_steps[idx]["params"]["lon"] = float(entry.get("lon", 0.0))
+		_steps[idx]["params"]["radius_m"] = int(entry.get("radius_m", 30))
+	_render_steps()
+	set_status("Coordonnées mises à jour.")
+
+
+func _on_map_cancelled() -> void:
+	DeviceServices.hide_map()
 
 
 # ============================================================  Helpers  ======

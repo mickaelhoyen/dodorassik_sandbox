@@ -185,3 +185,10 @@ LIBRARY_BY,Par %s,By %s
 EDITOR_NEW_STEP_TITLE,Nouvelle étape,New step
 EDITOR_DEFAULT_STEP_TITLE,Étape,Step
 EDITOR_ERR_SAVE,Erreur : %s,Error: %s
+PLAYER_PLAY_BTN,▶ Jouer — %s,▶ Play — %s
+PLAYER_DOWNLOAD_BTN,⬇ Télécharger — %s,⬇ Download — %s
+MAP_EDITOR_TITLE,Placer les étapes GPS,Place GPS steps
+MAP_EDITOR_SUBTITLE,Appuie sur la carte pour positionner chaque étape de type GPS,Tap the map to position each GPS step
+MAP_EDITOR_OPEN_BTN,🗺️ Éditer sur la carte,🗺️ Edit on map
+MAP_EDITOR_NO_LOCATION,Aucune étape GPS dans ce parcours.,No GPS steps in this trail.
+MAP_EDITOR_ERR_PARSE,Erreur lors de la lecture des coordonnées.,Error reading coordinates.

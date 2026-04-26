@@ -67,7 +67,11 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 
 ## Phase 4 — Création avancée
 
-- [ ] Éditeur de carte intégré (placer des points, dessiner un parcours)
+- [x] **Éditeur de carte intégré** : WebView Android (Option B) avec Leaflet.js —
+      `MapModule.java` overlay plein-écran, `map_editor.html` bundlé dans les
+      assets du plugin, protocole Base64 GDScript↔JS, signaux `map_confirmed` /
+      `map_cancelled`. Bouton « 🗺️ » dans l'éditeur de parcours, fallback
+      automatique sur les champs lat/lon si Android non disponible.
 - [x] **Bibliothèque d'étapes/énigmes partagée** : entité `StepTemplate` (titre,
       description, type, params jsonb, tags, visibilité publique), `StepTemplatesController`
       (search `?mine=&type=&tag=`, get, create, update, delete),

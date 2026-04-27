@@ -117,5 +117,5 @@ public class AdminHuntsController : ControllerBase
 }
 
 public record RejectHuntRequest(
-    [property: Required, StringLength(InputLimits.HuntDescriptionMaxLength, MinimumLength = 5)]
+    [Required, StringLength(InputLimits.HuntDescriptionMaxLength, MinimumLength = 5)]
     string Reason);

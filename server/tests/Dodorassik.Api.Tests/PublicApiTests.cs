@@ -16,34 +16,33 @@ namespace Dodorassik.Api.Tests;
 /// (privacy: a parent could submit a hunt referencing a private location;
 /// it should stay invisible until reviewed).
 /// </summary>
-public class PublicApiTests : IClassFixture<TestingWebAppFactory>
+public class PublicApiTests
 {
-    private readonly TestingWebAppFactory _factory;
     private readonly JsonSerializerOptions _json = new()
     {
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) },
     };
 
-    public PublicApiTests(TestingWebAppFactory factory) => _factory = factory;
-
     [Fact]
     public async Task Endpoint_is_anonymous()
     {
-        var resp = await _factory.CreateClient().GetAsync("/api/public/hunts");
+        using var factory = new TestingWebAppFactory();
+        var resp = await factory.CreateClient().GetAsync("/api/public/hunts");
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
     public async Task Returns_only_published_hunts()
     {
-        await SeedHuntAsync(_factory, "Brouillon", HuntStatus.Draft, HuntCategory.Permanent);
-        await SeedHuntAsync(_factory, "À modérer", HuntStatus.Submitted, HuntCategory.Permanent);
-        await SeedHuntAsync(_factory, "Rejetée", HuntStatus.Rejected, HuntCategory.Permanent);
-        await SeedHuntAsync(_factory, "Archivée", HuntStatus.Archived, HuntCategory.Permanent);
-        await SeedHuntAsync(_factory, "Publiée permanente", HuntStatus.Published, HuntCategory.Permanent);
+        using var factory = new TestingWebAppFactory();
+        await SeedHuntAsync(factory, "Brouillon", HuntStatus.Draft, HuntCategory.Permanent);
+        await SeedHuntAsync(factory, "À modérer", HuntStatus.Submitted, HuntCategory.Permanent);
+        await SeedHuntAsync(factory, "Rejetée", HuntStatus.Rejected, HuntCategory.Permanent);
+        await SeedHuntAsync(factory, "Archivée", HuntStatus.Archived, HuntCategory.Permanent);
+        await SeedHuntAsync(factory, "Publiée permanente", HuntStatus.Published, HuntCategory.Permanent);
 
-        var resp = await _factory.CreateClient().GetAsync("/api/public/hunts");
+        var resp = await factory.CreateClient().GetAsync("/api/public/hunts");
         var body = await resp.Content.ReadFromJsonAsync<PublicHuntsBody>(_json);
 
         body!.Permanent.Should().ContainSingle(h => h.Name == "Publiée permanente");
@@ -53,15 +52,16 @@ public class PublicApiTests : IClassFixture<TestingWebAppFactory>
     [Fact]
     public async Task Event_window_filters_out_past_and_future_events()
     {
+        using var factory = new TestingWebAppFactory();
         var now = DateTime.UtcNow;
-        await SeedHuntAsync(_factory, "Événement passé", HuntStatus.Published, HuntCategory.Event,
+        await SeedHuntAsync(factory, "Événement passé", HuntStatus.Published, HuntCategory.Event,
             eventStart: now.AddDays(-30), eventEnd: now.AddDays(-1));
-        await SeedHuntAsync(_factory, "Événement futur", HuntStatus.Published, HuntCategory.Event,
+        await SeedHuntAsync(factory, "Événement futur", HuntStatus.Published, HuntCategory.Event,
             eventStart: now.AddDays(1), eventEnd: now.AddDays(30));
-        await SeedHuntAsync(_factory, "Événement en cours", HuntStatus.Published, HuntCategory.Event,
+        await SeedHuntAsync(factory, "Événement en cours", HuntStatus.Published, HuntCategory.Event,
             eventStart: now.AddDays(-1), eventEnd: now.AddDays(1));
 
-        var resp = await _factory.CreateClient().GetAsync("/api/public/hunts");
+        var resp = await factory.CreateClient().GetAsync("/api/public/hunts");
         var body = await resp.Content.ReadFromJsonAsync<PublicHuntsBody>(_json);
 
         body!.Events.Should().ContainSingle(h => h.Name == "Événement en cours");
@@ -70,12 +70,13 @@ public class PublicApiTests : IClassFixture<TestingWebAppFactory>
     [Fact]
     public async Task Category_filter_narrows_response()
     {
-        await SeedHuntAsync(_factory, "P", HuntStatus.Published, HuntCategory.Permanent);
-        await SeedHuntAsync(_factory, "E", HuntStatus.Published, HuntCategory.Event,
+        using var factory = new TestingWebAppFactory();
+        await SeedHuntAsync(factory, "P", HuntStatus.Published, HuntCategory.Permanent);
+        await SeedHuntAsync(factory, "E", HuntStatus.Published, HuntCategory.Event,
             eventStart: DateTime.UtcNow.AddDays(-1), eventEnd: DateTime.UtcNow.AddDays(1));
 
-        var perm = await _factory.CreateClient().GetFromJsonAsync<PublicHuntsBody>("/api/public/hunts?category=permanent", _json);
-        var evt = await _factory.CreateClient().GetFromJsonAsync<PublicHuntsBody>("/api/public/hunts?category=event", _json);
+        var perm = await factory.CreateClient().GetFromJsonAsync<PublicHuntsBody>("/api/public/hunts?category=permanent", _json);
+        var evt = await factory.CreateClient().GetFromJsonAsync<PublicHuntsBody>("/api/public/hunts?category=event", _json);
 
         perm!.Permanent.Should().HaveCount(1);
         perm.Events.Should().BeEmpty();
@@ -86,8 +87,9 @@ public class PublicApiTests : IClassFixture<TestingWebAppFactory>
     [Fact]
     public async Task Public_response_does_not_leak_creator_or_submission_data()
     {
-        await SeedHuntAsync(_factory, "Visible", HuntStatus.Published, HuntCategory.Permanent);
-        var raw = await _factory.CreateClient().GetStringAsync("/api/public/hunts");
+        using var factory = new TestingWebAppFactory();
+        await SeedHuntAsync(factory, "Visible", HuntStatus.Published, HuntCategory.Permanent);
+        var raw = await factory.CreateClient().GetStringAsync("/api/public/hunts");
 
         // Public DTO has no creatorId, no email, no scores, no submission data.
         raw.Should().NotContain("creatorId", "the public catalogue must not expose creator identity");

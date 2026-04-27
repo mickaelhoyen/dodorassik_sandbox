@@ -13,6 +13,66 @@
 
 ---
 
+## 2026-04-27 — Correction des libellés de traduction (Godot affiche les clés)
+
+**Branche** : `claude/fix-translation-labels-SXMQ4`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> La traduction ne fonctionne pas, j'ai les labels au lieu de l'affichage de
+> texte (capture d'écran : `APP_TITLE`, `ROLE_PLAYER_BTN`, `LBL_ONLINE_MODE`, etc.
+> visibles en dur dans l'UI).
+
+### Analyse
+
+`tr("APP_TITLE")` renvoie la clé `APP_TITLE` quand aucune traduction n'est
+chargée par `TranslationServer`. Inspection :
+
+- `godot/translations/strings.csv` : tableau de clés FR/EN, contenu valide.
+- `godot/project.godot` : `locale/translations=PackedStringArray("res://translations/strings.csv")`.
+- Aucun fichier `.import` dans le repo (`find godot -name "*.import"` → vide).
+- Aucun `.translation` non plus.
+
+En Godot 4, le pipeline est :
+1. Le fichier `.csv` est associé à un importateur via un sidecar `xxx.csv.import`.
+2. L'importateur `csv_translation` génère un fichier `.translation` *par locale*
+   (binaire, à côté du CSV).
+3. `project.godot/locale/translations` doit pointer vers ces `.translation`,
+   *pas* vers le `.csv` source.
+
+Le projet faisait pointer `locale/translations` directement vers le `.csv` —
+chemin que `TranslationServer` ne sait pas charger comme ressource Translation,
+d'où l'absence totale de traductions et le retour des clés. L'absence du
+`strings.csv.import` empêche en plus l'éditeur de générer les `.translation`
+au prochain ouvrage.
+
+**Correctifs minimaux** :
+1. Création de `godot/translations/strings.csv.import` (importateur
+   `csv_translation`, délimiteur virgule, sortie : `strings.fr.translation` +
+   `strings.en.translation`).
+2. Mise à jour de `project.godot` : `locale/translations` référence les deux
+   `.translation` générés.
+
+Aucune modification des scripts UI : tous appellent déjà `tr("…")` correctement
+et `AppLocale` configure bien `TranslationServer.set_locale`.
+
+### Modifications
+
+- `godot/translations/strings.csv.import` : **création**, sidecar d'import
+  CSV→Translation pour Godot 4.
+- `godot/project.godot` : remplacement de la référence CSV par les chemins
+  `.translation` compilés (FR + EN).
+
+### Security & Privacy review
+
+Changement purement i18n / config moteur. N'introduit aucune PII, ne touche
+ni à l'authentification, ni aux logs, ni aux endpoints serveur, ni aux
+permissions Android. Les invariants des sections 2 et 3 de `CLAUDE.md`
+restent satisfaits.
+
+---
+
 ## 2026-04-27 — Correction CI (rate limiting tue les tests d'intégration)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

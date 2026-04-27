@@ -47,7 +47,7 @@ public class PublicApiTests : IClassFixture<TestingWebAppFactory>
         var body = await resp.Content.ReadFromJsonAsync<PublicHuntsBody>(_json);
 
         body!.Permanent.Should().ContainSingle(h => h.Name == "Publiée permanente");
-        body.Permanent.Should().NotContain(h => h.Name is "Brouillon" or "À modérer" or "Rejetée" or "Archivée");
+        body.Permanent.Should().NotContain(h => h.Name == "Brouillon" || h.Name == "À modérer" || h.Name == "Rejetée" || h.Name == "Archivée");
     }
 
     [Fact]

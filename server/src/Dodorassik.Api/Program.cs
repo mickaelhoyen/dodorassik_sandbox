@@ -93,40 +93,48 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 // -----------------------------------------------------------------------
 // Rate limiting (anti-brute force, anti-DoS) — see docs/SECURITY.md §4
 // -----------------------------------------------------------------------
+// In Development (which includes the test factory environment), use very high
+// limits so integration tests never hit the rate limiter. Production retains
+// the strict values.
+var isDev = builder.Environment.IsDevelopment();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.AddFixedWindowLimiter("auth-login", o =>
     {
-        o.PermitLimit = 5;
+        o.PermitLimit = isDev ? 10_000 : 5;
         o.Window = TimeSpan.FromMinutes(1);
         o.QueueLimit = 0;
     });
     options.AddFixedWindowLimiter("auth-register", o =>
     {
-        o.PermitLimit = 3;
+        o.PermitLimit = isDev ? 10_000 : 3;
         o.Window = TimeSpan.FromHours(1);
         o.QueueLimit = 0;
     });
     options.AddFixedWindowLimiter("submit", o =>
     {
-        o.PermitLimit = 30;
+        o.PermitLimit = isDev ? 10_000 : 30;
         o.Window = TimeSpan.FromMinutes(1);
         o.QueueLimit = 0;
     });
 
-    // Global fallback — keyed on remote IP. Real deployments should sit
-    // behind a trusted reverse proxy and use forwarded headers.
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 60,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0,
-            }));
+    if (!isDev)
+    {
+        // Global fallback — keyed on remote IP. Real deployments should sit
+        // behind a trusted reverse proxy and use forwarded headers.
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 60,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+    }
 });
 
 // -----------------------------------------------------------------------

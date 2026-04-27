@@ -13,6 +13,58 @@
 
 ---
 
+## 2026-04-27 — Correction CI (rate limiting tue les tests d'intégration)
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Le CI est toujours en failed — les tests reçoivent des 429 au lieu des 400/200 attendus.
+
+### Analyse
+
+Après correction de CS0832 (commit `e31719c`), le build passe et les tests tournent
+enfin. Nouveau symptôme : beaucoup de tests obtiennent 429 TooManyRequests là où
+ils attendent 400 ou 200.
+
+Cause : le rate limiter `auth-register` est configuré à **3 requêtes par heure**,
+sans partitionnement par IP — c'est un compteur global partagé par toutes les
+requêtes de l'endpoint. Dans `AuthApiTests` (qui utilise un `IClassFixture` = une
+seule usine), les tests `Register_creates_account`, `Register_rejects_duplicate`
+et `Register_rejects_invalid_input` (4 cas Theory) consomment 7+ registrations
+sur la même usine → limite dépassée dès le 4e appel → 429.
+
+Idem pour `HuntsApiTests`, `HuntsModerationApiTests`, etc. : chaque classe de
+test partage son usine et effectue plusieurs registrations.
+
+La suggestion de l'audit (changer `[property: Required]` → `[Required]`) est un
+faux positif : la syntaxe `[property: X]` est correcte pour les records en
+ASP.NET Core 8 (l'attribut est sur la propriété générée, que le model validator
+inspecte effectivement).
+
+**Solution** : utiliser des limites très élevées (10 000 / fenêtre) en
+environnement `Development` — l'usine de tests (`TestingWebAppFactory`) fixe
+l'environnement à Development. En production les valeurs strictes sont conservées.
+Le global limiter par IP n'est également activé qu'en dehors de Development
+(inutile en local ou en test, et aucun RemoteIpAddress fiable dans un contexte
+in-process).
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Api/Program.cs` | Limits conditionnelles Development vs Production pour rate limiter |
+
+### Security & Privacy review
+
+Les limites de prod (3/h register, 5/min login, 30/min submit) sont **inchangées**.
+En Development seulement les limites sont relâchées. `IsDevelopment()` est strict
+(variable d'environnement `ASPNETCORE_ENVIRONMENT = Development`) ; un déploiement
+de production n'active jamais ce chemin.
+
+---
+
 ## 2026-04-27 — Correction CI (is-pattern dans expression tree)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

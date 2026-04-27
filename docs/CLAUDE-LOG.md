@@ -13,6 +13,47 @@
 
 ---
 
+## 2026-04-27 — Correction CI (is-pattern dans expression tree)
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Le CI fail toujours à chaque fois, les workflow échouent systématiquement.
+
+### Analyse
+
+Récupération des logs de CI via l'URL du job GitHub Actions (run #24963923261).
+Erreur réelle : `CS0832 An expression tree may not contain an 'is' pattern-matching operator`
+dans `PublicApiTests.cs` ligne 50.
+
+Le lambda `h => h.Name is "Brouillon" or "À modérer" or "Rejetée" or "Archivée"` est
+passé à `FluentAssertions.NotContain()` qui attend un `Expression<Func<T, bool>>`.
+C# ne permet pas les patterns `is ... or` dans un arbre d'expression (limitation du
+compilateur, RFC expression-trees). C'est une erreur de compilation, pas de runtime —
+d'où l'échec silencieux en ~30 secondes (restore + build only, sans résultats de tests).
+
+Solution : remplacer le pattern `is X or Y` par des comparaisons `== X || == Y` standard,
+compatibles avec les expression trees.
+
+Note : commit `7d7492d` (verbose output) n'avait pas déclenché de run CI car il ne
+modifiait pas `server/**` (path filter). La correction `671b836` (ExecuteUpdateAsync)
+avait bien déclenché un run, mais l'erreur de compilation était antérieure.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/tests/Dodorassik.Api.Tests/PublicApiTests.cs` | Correctif — is-pattern → || equality |
+
+### Security & Privacy review
+
+Changement purement dans les tests. Aucun impact sur le code de production,
+la sécurité, la vie privée ou les invariants CLAUDE.md.
+
+---
+
 ## 2026-04-26 — Correction CI (ExecuteUpdateAsync InMemory + Godot download)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`

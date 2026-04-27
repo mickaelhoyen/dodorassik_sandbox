@@ -20,25 +20,20 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Show .NET info
+        run: dotnet --info
+
+      - name: Restore
+        run: dotnet restore --verbosity normal
         working-directory: server
 
-      - name: Build (Release)
-        run: dotnet build --no-restore -c Release
+      - name: Build
+        run: dotnet build --no-restore -c Release --verbosity normal
         working-directory: server
 
-      - name: Run tests
-        run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
+      - name: Test
+        run: dotnet test --no-build -c Release --verbosity normal
         working-directory: server
-        # Tests use in-memory EF Core — no database service needed.
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: server/TestResults/*.trx
 
       - name: Audit vulnerable packages
         run: dotnet list package --vulnerable --include-transitive

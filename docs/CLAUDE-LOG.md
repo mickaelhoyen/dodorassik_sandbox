@@ -13,6 +13,48 @@
 
 ---
 
+## 2026-04-28 — Fix test `Update_forbidden_for_other_creators` (email case normalization)
+
+**Branche** : `claude/build-release-dodorassik-9suGI`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+CI failure: `HuntsApiTests.Update_forbidden_for_other_creators` échoue avec
+`InvalidOperationException: Sequence contains no elements` dans `RegisterUser` à
+la ligne qui fait `db.Users.Single(u => u.Email == email)`.
+
+### Analyse
+
+`AuthController.Register` normalise l'email en minuscules avant le stockage
+(`req.Email.Trim().ToLowerInvariant()`). Le helper local `RegisterUser` dans
+`HuntsApiTests` cherchait ensuite l'utilisateur par la chaîne originale
+(`ownerA@example.com`) qui ne matche pas `ownera@example.com` stocké — EF Core
+InMemory compare les chaînes de manière sensible à la casse.
+
+Solution : parser le corps de la réponse d'enregistrement (qui contient l'ID
+utilisateur) dès le départ, puis chercher par `u.Id == body.User.Id`. C'est
+exactement le pattern déjà utilisé dans `TestUserHelper.RegisterAndPromoteAsync`.
+
+Alternatives rejetées :
+- Normaliser l'email dans la requête de recherche (`email.ToLowerInvariant()`) :
+  couplage implicite avec la logique métier du contrôleur.
+- Modifier `AuthController` pour ne pas normaliser : brise le comportement voulu
+  et la sécurité (emails case-insensitive selon RFC 5321 local-part).
+
+### Modifications
+
+- `server/tests/Dodorassik.Api.Tests/HuntsApiTests.cs` : `RegisterUser` lit le
+  corps de réponse immédiatement et cherche l'utilisateur par `Id`.
+
+### Security & Privacy review
+
+Aucune modification de code de production. Le changement est limité au code de
+test. Aucun nouvel endpoint, aucune donnée PII, aucun secret. Invariants de
+`CLAUDE.md` §2 et §3 préservés.
+
+---
+
 ## 2026-04-28 — Suppression de `db/init.sql` (source unique = `DbContext`)
 
 **Branche** : `claude/fix-translation-labels-SXMQ4`

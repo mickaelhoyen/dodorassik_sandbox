@@ -13,6 +13,68 @@
 
 ---
 
+## 2026-04-28 — Suppression de `db/init.sql` (source unique = `DbContext`)
+
+**Branche** : `claude/fix-translation-labels-SXMQ4`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Pourquoi aurais-je besoin d'un script `init.sql` ? Le workflow EF Core natif
+> n'est-il pas suffisant ?
+
+### Analyse
+
+Le scénario d'origine (« CI/conteneur sans `dotnet-ef` ») tenait mal :
+`dotnet tool install dotnet-ef` est trivial, et pour la prod le SQL peut être
+généré à la volée par `dotnet ef migrations script --idempotent`, ce qui
+satisfait l'invariant `CLAUDE.md` §2 (« pas de `CREATE` au runtime ») puisqu'un
+DBA pipe le résultat dans `psql` avec un user privilégié, sans que l'app n'ait
+jamais besoin du droit `CREATE`.
+
+Le coût caché de `db/init.sql`, c'est la dérive vis-à-vis du `DbContext` :
+
+- `init.sql` ne créait pas `Teams`, `TeamMembers`, `StepTemplates` ni la
+  colonne `Submissions.TeamId` (toutes ajoutées en Phase 3 et 4 sans
+  régénération).
+- Deux migrate-scripts (`migrate_add_hunt_category.sql`, `migrate_add_moderation.sql`)
+  documentaient déjà cette dette accumulée.
+
+Avec la migration `InitialCreate` générée localement et commitée par
+l'utilisateur (`54b9008`), il n'y a plus de raison de maintenir une seconde
+source de vérité SQL. Une seule chaîne d'outils (EF Core) → un seul snapshot
+(le `ModelSnapshot` lié à la migration).
+
+### Modifications
+
+- `server/db/init.sql` : **supprimé**.
+- `server/db/migrate_add_hunt_category.sql` : **supprimé**.
+- `server/db/migrate_add_moderation.sql` : **supprimé**.
+- `server/db/` : dossier supprimé (vide).
+- `server/src/Dodorassik.Infrastructure/Persistence/Migrations/README.md` :
+  réécrit. Section « bootstrap alternatif sans EF Core » remplacée par une
+  section « Déploiement prod » qui décrit `dotnet ef migrations script --idempotent | psql`.
+  Section « Reset complet » ajoutée pour le workflow habituel du dev.
+- `server/tests/Dodorassik.Api.Tests/README.md` : commentaire dans l'exemple
+  Testcontainers mis à jour (`MigrateAsync()` ou `migrations script` au lieu
+  de `init.sql`).
+- `docs/ROADMAP.md` : mention de `db/init.sql` retirée de la ligne
+  « Migrations EF Core ».
+
+### Security & Privacy review
+
+Suppression de fichiers SQL statiques uniquement. Aucune entité métier touchée,
+aucune nouvelle PII, aucun changement d'authentification ni de logging. La règle
+CLAUDE.md §2.1 (« pas de secret en clair dans le repo ») reste évidemment
+satisfaite — les `.sql` supprimés ne contenaient que des `CREATE TABLE`, pas
+de credentials. La règle §3.5 (RGPD effectif) n'est pas touchée : les
+endpoints `GET/DELETE /api/users/me` ne dépendaient pas du SQL retiré. La
+règle §2 sur les privilèges DB runtime est préservée car la nouvelle voie
+documentée (`migrations script --idempotent`) reste exécutée hors process par
+un user à privilèges élevés.
+
+---
+
 ## 2026-04-28 — Correction CI ([property:] DTOs + isolation PublicApiTests)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`
@@ -67,6 +129,66 @@ identique fonctionnellement (les mêmes règles s'appliquent, maintenant correct
 évaluées). Aucun élargissement de surface d'attaque.
 Isolation des tests : changement de test uniquement, aucun impact sur le code de
 production.
+
+---
+
+## 2026-04-27 — Correction des libellés de traduction (Godot affiche les clés)
+
+**Branche** : `claude/fix-translation-labels-SXMQ4`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> La traduction ne fonctionne pas, j'ai les labels au lieu de l'affichage de
+> texte (capture d'écran : `APP_TITLE`, `ROLE_PLAYER_BTN`, `LBL_ONLINE_MODE`, etc.
+> visibles en dur dans l'UI).
+
+### Analyse
+
+`tr("APP_TITLE")` renvoie la clé `APP_TITLE` quand aucune traduction n'est
+chargée par `TranslationServer`. Inspection :
+
+- `godot/translations/strings.csv` : tableau de clés FR/EN, contenu valide.
+- `godot/project.godot` : `locale/translations=PackedStringArray("res://translations/strings.csv")`.
+- Aucun fichier `.import` dans le repo (`find godot -name "*.import"` → vide).
+- Aucun `.translation` non plus.
+
+En Godot 4, le pipeline est :
+1. Le fichier `.csv` est associé à un importateur via un sidecar `xxx.csv.import`.
+2. L'importateur `csv_translation` génère un fichier `.translation` *par locale*
+   (binaire, à côté du CSV).
+3. `project.godot/locale/translations` doit pointer vers ces `.translation`,
+   *pas* vers le `.csv` source.
+
+Le projet faisait pointer `locale/translations` directement vers le `.csv` —
+chemin que `TranslationServer` ne sait pas charger comme ressource Translation,
+d'où l'absence totale de traductions et le retour des clés. L'absence du
+`strings.csv.import` empêche en plus l'éditeur de générer les `.translation`
+au prochain ouvrage.
+
+**Correctifs minimaux** :
+1. Création de `godot/translations/strings.csv.import` (importateur
+   `csv_translation`, délimiteur virgule, sortie : `strings.fr.translation` +
+   `strings.en.translation`).
+2. Mise à jour de `project.godot` : `locale/translations` référence les deux
+   `.translation` générés.
+
+Aucune modification des scripts UI : tous appellent déjà `tr("…")` correctement
+et `AppLocale` configure bien `TranslationServer.set_locale`.
+
+### Modifications
+
+- `godot/translations/strings.csv.import` : **création**, sidecar d'import
+  CSV→Translation pour Godot 4.
+- `godot/project.godot` : remplacement de la référence CSV par les chemins
+  `.translation` compilés (FR + EN).
+
+### Security & Privacy review
+
+Changement purement i18n / config moteur. N'introduit aucune PII, ne touche
+ni à l'authentification, ni aux logs, ni aux endpoints serveur, ni aux
+permissions Android. Les invariants des sections 2 et 3 de `CLAUDE.md`
+restent satisfaits.
 
 ---
 

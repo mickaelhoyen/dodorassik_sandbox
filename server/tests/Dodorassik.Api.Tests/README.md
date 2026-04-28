@@ -66,7 +66,10 @@ public class PostgresWebAppFactory : WebApplicationFactory<Program>, IAsyncLifet
     public async Task InitializeAsync()
     {
         await _pg.StartAsync();
-        // Apply server/db/init.sql once via _pg.ExecScriptAsync(...)
+        // Apply the EF Core schema once. Either:
+        //   - call db.Database.MigrateAsync() on the AppDbContext, or
+        //   - generate the SQL with `dotnet ef migrations script --idempotent`
+        //     and pipe it through _pg.ExecScriptAsync(...).
     }
 
     public new async Task DisposeAsync() => await _pg.DisposeAsync();

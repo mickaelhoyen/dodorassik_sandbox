@@ -57,7 +57,7 @@ ui_back={
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://translations/strings.csv")
+locale/translations=PackedStringArray("res://translations/strings.fr.translation", "res://translations/strings.en.translation")
 locale/fallback="fr"
 
 [network]

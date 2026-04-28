@@ -25,8 +25,9 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       voir `server/tests/Dodorassik.Api.Tests/README.md` pour la voie
       Testcontainers Postgres).
 - [x] Migrations EF Core : scaffolding (`DesignTimeDbContextFactory`,
-      `db/init.sql`, README de génération). Génération à lancer en local
-      (`dotnet ef migrations add Initial`) puis commit.
+      README de génération). Génération à lancer en local
+      (`dotnet ef migrations add InitialCreate`) puis commit. SQL prod
+      généré à la volée par `dotnet ef migrations script --idempotent`.
 - [x] Plugin Android scaffold (`godot/android/plugin/`) : permissions,
       modules GPS / Camera / Bluetooth, intégration `DeviceServices` runtime.
 - [x] Sélection / création de famille à la connexion (`FamiliesController`

@@ -1,56 +1,68 @@
 # EF Core migrations
 
-Les fichiers de migration EF Core ne sont **pas committés depuis le sandbox**
-parce que leur snapshot doit absolument refléter, octet près, le `DbContext`
-au moment où ils sont générés. Générer les migrations sur la machine du dev
-garantit que le snapshot est cohérent avec la version exacte d'EF Core
-utilisée localement.
+Les fichiers de migration EF Core ne sont **pas committés depuis ce sandbox**.
+Leur snapshot doit refléter, octet près, le `DbContext` au moment où ils sont
+générés ; les générer sur la machine du dev garantit qu'on n'introduit pas un
+delta entre la version d'EF Core utilisée localement et celle qui produit le
+snapshot.
 
-## Première génération
+## Workflow dev (machine locale)
+
+`DesignTimeDbContextFactory` (cf. `../DesignTimeDbContextFactory.cs`) permet
+à `dotnet ef` de fonctionner sans démarrer l'host ASP.NET — la chaîne de
+connexion par défaut suffit.
 
 ```bash
 cd server
 
-# 1. Le DesignTimeDbContextFactory permet à dotnet ef de fonctionner sans
-#    bootstrap du host ASP.NET. Une chaîne de connexion factice convient.
-dotnet ef migrations add Initial \
+# Postgres up
+docker compose up -d
+
+# Première génération (ou après un reset)
+dotnet ef migrations add InitialCreate \
     --project src/Dodorassik.Infrastructure \
     --startup-project src/Dodorassik.Api \
     --output-dir Persistence/Migrations
 
-# 2. Vérifier le diff, puis commiter:
-git add src/Dodorassik.Infrastructure/Persistence/Migrations
-git commit -m "Add initial EF Core migration"
-```
-
-## Appliquer les migrations
-
-```bash
-docker compose up -d                          # Postgres local
+# Appliquer
 dotnet ef database update \
     --project src/Dodorassik.Infrastructure \
     --startup-project src/Dodorassik.Api
 ```
 
-## Bootstrap alternatif sans EF Core
+### Reset complet
 
-Pour un environnement où `dotnet-ef` n'est pas disponible (CI, container
-minimal), `db/init.sql` contient le schéma équivalent à `Initial`. Il **doit
-être régénéré** chaque fois que le `DbContext` change :
+Quand le `DbContext` change suffisamment pour vouloir repartir de zéro :
+
+```bash
+dotnet ef database drop -f \
+    --project src/Dodorassik.Infrastructure \
+    --startup-project src/Dodorassik.Api
+
+find src/Dodorassik.Infrastructure/Persistence/Migrations \
+    -maxdepth 1 -type f ! -name 'README.md' -delete
+
+# puis re-faire migrations add + database update
+```
+
+## Déploiement prod
+
+Conformément à `CLAUDE.md` §2, le user PostgreSQL applicatif n'a **pas** le
+privilège `CREATE` au runtime. Les migrations s'appliquent hors process avec
+un user à privilèges élevés. On génère le SQL à la volée à partir du même
+modèle EF — pas de script SQL maintenu à la main, donc pas de risque de
+dérive vis-à-vis du `DbContext` :
 
 ```bash
 dotnet ef migrations script --idempotent \
     --project src/Dodorassik.Infrastructure \
     --startup-project src/Dodorassik.Api \
-    --output ../db/init.sql
+    | psql "$DODORASSIK_ADMIN_CONN"
 ```
 
 ## Sécurité (rappel `CLAUDE.md`)
 
-- Le user PostgreSQL applicatif n'a **pas** le privilège `CREATE` au runtime.
-  Les migrations sont appliquées hors process avec un user à privilèges
-  élevés, puis l'app tourne avec un user en `SELECT/INSERT/UPDATE/DELETE`
-  uniquement.
+- L'user applicatif tourne en `SELECT/INSERT/UPDATE/DELETE` uniquement.
 - Aucune migration ne doit insérer de données personnelles (`User`,
   `Family`, `StepSubmission`). Si du seed est nécessaire, l'introduire dans
-  un script séparé `db/seed.sql` et ne jamais l'exécuter en prod.
+  un script séparé et ne **jamais** l'exécuter en prod.

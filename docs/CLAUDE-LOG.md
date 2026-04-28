@@ -13,6 +13,68 @@
 
 ---
 
+## 2026-04-28 — Suppression de `db/init.sql` (source unique = `DbContext`)
+
+**Branche** : `claude/fix-translation-labels-SXMQ4`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Pourquoi aurais-je besoin d'un script `init.sql` ? Le workflow EF Core natif
+> n'est-il pas suffisant ?
+
+### Analyse
+
+Le scénario d'origine (« CI/conteneur sans `dotnet-ef` ») tenait mal :
+`dotnet tool install dotnet-ef` est trivial, et pour la prod le SQL peut être
+généré à la volée par `dotnet ef migrations script --idempotent`, ce qui
+satisfait l'invariant `CLAUDE.md` §2 (« pas de `CREATE` au runtime ») puisqu'un
+DBA pipe le résultat dans `psql` avec un user privilégié, sans que l'app n'ait
+jamais besoin du droit `CREATE`.
+
+Le coût caché de `db/init.sql`, c'est la dérive vis-à-vis du `DbContext` :
+
+- `init.sql` ne créait pas `Teams`, `TeamMembers`, `StepTemplates` ni la
+  colonne `Submissions.TeamId` (toutes ajoutées en Phase 3 et 4 sans
+  régénération).
+- Deux migrate-scripts (`migrate_add_hunt_category.sql`, `migrate_add_moderation.sql`)
+  documentaient déjà cette dette accumulée.
+
+Avec la migration `InitialCreate` générée localement et commitée par
+l'utilisateur (`54b9008`), il n'y a plus de raison de maintenir une seconde
+source de vérité SQL. Une seule chaîne d'outils (EF Core) → un seul snapshot
+(le `ModelSnapshot` lié à la migration).
+
+### Modifications
+
+- `server/db/init.sql` : **supprimé**.
+- `server/db/migrate_add_hunt_category.sql` : **supprimé**.
+- `server/db/migrate_add_moderation.sql` : **supprimé**.
+- `server/db/` : dossier supprimé (vide).
+- `server/src/Dodorassik.Infrastructure/Persistence/Migrations/README.md` :
+  réécrit. Section « bootstrap alternatif sans EF Core » remplacée par une
+  section « Déploiement prod » qui décrit `dotnet ef migrations script --idempotent | psql`.
+  Section « Reset complet » ajoutée pour le workflow habituel du dev.
+- `server/tests/Dodorassik.Api.Tests/README.md` : commentaire dans l'exemple
+  Testcontainers mis à jour (`MigrateAsync()` ou `migrations script` au lieu
+  de `init.sql`).
+- `docs/ROADMAP.md` : mention de `db/init.sql` retirée de la ligne
+  « Migrations EF Core ».
+
+### Security & Privacy review
+
+Suppression de fichiers SQL statiques uniquement. Aucune entité métier touchée,
+aucune nouvelle PII, aucun changement d'authentification ni de logging. La règle
+CLAUDE.md §2.1 (« pas de secret en clair dans le repo ») reste évidemment
+satisfaite — les `.sql` supprimés ne contenaient que des `CREATE TABLE`, pas
+de credentials. La règle §3.5 (RGPD effectif) n'est pas touchée : les
+endpoints `GET/DELETE /api/users/me` ne dépendaient pas du SQL retiré. La
+règle §2 sur les privilèges DB runtime est préservée car la nouvelle voie
+documentée (`migrations script --idempotent`) reste exécutée hors process par
+un user à privilèges élevés.
+
+---
+
 ## 2026-04-27 — Correction des libellés de traduction (Godot affiche les clés)
 
 **Branche** : `claude/fix-translation-labels-SXMQ4`

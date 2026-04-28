@@ -13,10 +13,67 @@
 
 ---
 
+## 2026-04-28 — Correction CI ([property:] DTOs + isolation PublicApiTests)
+
+**Branche** : `claude/roadmap-next-phase-qbyvm`
+**Commit** : `3093f35`
+
+### Requête utilisateur
+
+> Les workflow CI échouent systématiquement — 39/45 tests en erreur (output complet dotnet test fourni).
+
+### Analyse
+
+Deux causes racines distinctes identifiées depuis l'output complet de `dotnet test`.
+
+**Cause 1 (39/45 tests)** : `InvalidOperationException` sur chaque appel à
+`/api/auth/register` (et tout endpoint utilisant ces DTOs). Stack trace :
+`ModelMetadata.ThrowIfRecordTypeHasValidationOnProperties()`. ASP.NET Core 8.0.10
+a introduit un breaking change : la syntaxe `[property: Required]` place l'attribut
+sur la propriété synthétisée du record, que le binder *ignore* pour la validation ;
+les attributs doivent être sur le **paramètre du constructeur primaire** (sans `property:`).
+Depuis ASP.NET Core 8.0.10, le framework lance une exception au lieu d'ignorer
+silencieusement — d'où 500 sur tous les endpoints. Tous les DTO records utilisaient
+`[property: X]` : `RegisterRequest`, `LoginRequest`, `UpdateProfileRequest`,
+`CreateHuntRequest`, `CreateHuntStepRequest`, `CreateClueRequest`, `UpdateHuntRequest`,
+`CreateStepTemplateRequest`, `CreateTeamRequest`, `RejectHuntRequest`,
+`CreateFamilyRequest`.
+
+**Cause 2 (1/45 test)** : `PublicApiTests.Category_filter_narrows_response` trouvait
+3 permanentes au lieu de 1. La classe utilisait `IClassFixture<TestingWebAppFactory>`,
+partageant une seule DB in-memory pour les 5 méthodes de la classe. Les données
+seedées par `Returns_only_published_hunts` ("Publiée permanente") et
+`Public_response_does_not_leak_creator_or_submission_data` ("Visible") persistaient
+lors de `Category_filter_narrows_response`. Chaque méthode crée désormais sa propre
+instance `TestingWebAppFactory` (qui génère un `Guid` unique pour le nom de DB
+in-memory) — isolation complète garantie.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Api/Dtos/AuthDtos.cs` | Suppression `property:` sur tous les attributs de validation |
+| `server/src/Dodorassik.Api/Dtos/HuntDtos.cs` | Idem |
+| `server/src/Dodorassik.Api/Dtos/StepTemplateDtos.cs` | Idem |
+| `server/src/Dodorassik.Api/Dtos/TeamDtos.cs` | Idem |
+| `server/src/Dodorassik.Api/Controllers/AdminHuntsController.cs` | Idem (record inline `RejectHuntRequest`) |
+| `server/src/Dodorassik.Api/Controllers/FamiliesController.cs` | Idem (record inline `CreateFamilyRequest`) |
+| `server/tests/Dodorassik.Api.Tests/PublicApiTests.cs` | Isolation per-test : `IClassFixture` → factory locale par méthode |
+
+### Security & Privacy review
+
+Suppressions `property:` : changement purement syntaxique, la validation reste
+identique fonctionnellement (les mêmes règles s'appliquent, maintenant correctement
+évaluées). Aucun élargissement de surface d'attaque.
+Isolation des tests : changement de test uniquement, aucun impact sur le code de
+production.
+
+---
+
 ## 2026-04-27 — Correction CI (rate limiting tue les tests d'intégration)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`
-**Commit** : (en cours)
+**Commit** : `c43ebbf`
 
 ### Requête utilisateur
 
@@ -68,7 +125,7 @@ de production n'active jamais ce chemin.
 ## 2026-04-27 — Correction CI (is-pattern dans expression tree)
 
 **Branche** : `claude/roadmap-next-phase-qbyvm`
-**Commit** : (en cours)
+**Commit** : `e31719c`
 
 ### Requête utilisateur
 

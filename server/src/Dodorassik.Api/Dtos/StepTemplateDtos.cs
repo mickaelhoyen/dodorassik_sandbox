@@ -19,16 +19,16 @@ public record StepTemplateDto(
     DateTime CreatedAtUtc);
 
 public record CreateStepTemplateRequest(
-    [property: Required, StringLength(InputLimits.StepTitleMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.StepTitleMaxLength, MinimumLength = 1)]
     string Title,
-    [property: StringLength(InputLimits.StepDescriptionMaxLength)]
+    [StringLength(InputLimits.StepDescriptionMaxLength)]
     string? Description,
-    [property: Required]
+    [Required]
     string Type,
     JsonElement? Params,
-    [property: StringLength(512)]
+    [StringLength(512)]
     string? Tags,
-    [property: Range(0, 1_000)]
+    [Range(0, 1_000)]
     int? DefaultPoints,
     bool IsPublic = false);
 

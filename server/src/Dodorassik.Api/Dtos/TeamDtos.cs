@@ -15,9 +15,9 @@ public record TeamDto(
 public record TeamMemberDto(Guid UserId, string DisplayName, DateTime JoinedAtUtc);
 
 public record CreateTeamRequest(
-    [property: Required, StringLength(64, MinimumLength = 1)]
+    [Required, StringLength(64, MinimumLength = 1)]
     string Name,
-    [property: StringLength(7)]
+    [StringLength(7)]
     string? Color);
 
 public record LeaderboardEntryDto(

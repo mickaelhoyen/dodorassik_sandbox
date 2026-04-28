@@ -80,5 +80,5 @@ public class FamiliesController : ControllerBase
 public record FamilyDto(Guid Id, string Name);
 
 public record CreateFamilyRequest(
-    [property: Required, StringLength(InputLimits.DisplayNameMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.DisplayNameMaxLength, MinimumLength = 1)]
     string Name);

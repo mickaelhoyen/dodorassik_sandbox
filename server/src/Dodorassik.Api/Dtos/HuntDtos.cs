@@ -40,55 +40,55 @@ public record ClueDto(
     int Points);
 
 public record CreateHuntRequest(
-    [property: Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
     string Name,
-    [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
+    [StringLength(InputLimits.HuntDescriptionMaxLength)]
     string? Description,
     string? Mode,
     string? Category,
     string? LocationLabel,
     DateTime? EventStartUtc,
     DateTime? EventEndUtc,
-    [property: MaxLength(InputLimits.StepsPerHuntMax)]
+    [MaxLength(InputLimits.StepsPerHuntMax)]
     List<CreateHuntStepRequest>? Steps,
-    [property: MaxLength(InputLimits.CluesPerHuntMax)]
+    [MaxLength(InputLimits.CluesPerHuntMax)]
     List<CreateClueRequest>? Clues);
 
 public record CreateHuntStepRequest(
     Guid? Id,
-    [property: Required, StringLength(InputLimits.StepTitleMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.StepTitleMaxLength, MinimumLength = 1)]
     string Title,
-    [property: StringLength(InputLimits.StepDescriptionMaxLength)]
+    [StringLength(InputLimits.StepDescriptionMaxLength)]
     string? Description,
-    [property: Required]
+    [Required]
     string Type,
     JsonElement? Params,
-    [property: Range(0, 1_000)]
+    [Range(0, 1_000)]
     int? Points,
     bool? BlocksNext);
 
 public record CreateClueRequest(
     Guid? Id,
-    [property: Required, StringLength(InputLimits.ClueCodeMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.ClueCodeMaxLength, MinimumLength = 1)]
     string Code,
-    [property: StringLength(InputLimits.ClueTitleMaxLength)]
+    [StringLength(InputLimits.ClueTitleMaxLength)]
     string? Title,
-    [property: StringLength(InputLimits.ClueRevealMaxLength)]
+    [StringLength(InputLimits.ClueRevealMaxLength)]
     string? Reveal,
-    [property: Range(0, 1_000)]
+    [Range(0, 1_000)]
     int? Points);
 
 /// <summary>Full replace: fields absent from the request are cleared/reset.</summary>
 public record UpdateHuntRequest(
-    [property: Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
+    [Required, StringLength(InputLimits.HuntNameMaxLength, MinimumLength = 1)]
     string Name,
-    [property: StringLength(InputLimits.HuntDescriptionMaxLength)]
+    [StringLength(InputLimits.HuntDescriptionMaxLength)]
     string? Description,
     string? Mode,
     string? LocationLabel,
-    [property: MaxLength(InputLimits.StepsPerHuntMax)]
+    [MaxLength(InputLimits.StepsPerHuntMax)]
     List<CreateHuntStepRequest>? Steps,
-    [property: MaxLength(InputLimits.CluesPerHuntMax)]
+    [MaxLength(InputLimits.CluesPerHuntMax)]
     List<CreateClueRequest>? Clues);
 
 public record SubmitStepRequest(JsonElement Payload, Guid? TeamId = null);

@@ -2,6 +2,7 @@
 
 importer="csv_translation"
 type="Translation"
+uid="uid://csla8whp3mvfk"
 
 [deps]
 
@@ -12,5 +13,7 @@ dest_files=["res://translations/strings.fr.translation", "res://translations/str
 
 [params]
 
-compress=true
+compress=1
 delimiter=0
+unescape_keys=false
+unescape_translations=true

@@ -226,17 +226,15 @@ public class HuntsApiTests : IClassFixture<TestingWebAppFactory>
             displayName = email.Split('@')[0],
         });
         first.EnsureSuccessStatusCode();
+        var body = await first.Content.ReadFromJsonAsync<AuthBody>();
 
         if (role == UserRole.Player)
-        {
-            var body = await first.Content.ReadFromJsonAsync<AuthBody>();
             return (body!.User.Id, body.Token);
-        }
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var jwt = scope.ServiceProvider.GetRequiredService<Dodorassik.Core.Abstractions.IJwtTokenService>();
-        var user = db.Users.Single(u => u.Email == email);
+        var user = db.Users.Single(u => u.Id == body!.User.Id);
         user.Role = role;
         db.SaveChanges();
         return (user.Id, jwt.Issue(user));

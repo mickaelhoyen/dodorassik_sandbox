@@ -40,3 +40,4 @@ public class TestingWebAppFactory : WebApplicationFactory<Program>
         });
     }
 }
+

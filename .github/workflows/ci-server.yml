@@ -32,16 +32,15 @@ jobs:
         working-directory: server
 
       - name: Test
-        run: dotnet test --no-build -c Release --verbosity detailed --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test --no-build -c Release --logger "console;verbosity=detailed" --logger "trx;LogFileName=test-results.trx" -- RunConfiguration.TreatNoTestsAsError=true
         working-directory: server
 
-      - name: Print failing tests
-        if: failure()
-        run: |
-          find server -name "test-results.trx" | xargs grep -l "<UnitTestResult" | while read f; do
-            echo "=== $f ==="
-            grep -A 5 'outcome="Failed"' "$f" || true
-          done
+      - name: Upload TRX test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: server/**/test-results.trx
 
       - name: Audit vulnerable packages
         run: dotnet list package --vulnerable --include-transitive

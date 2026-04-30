@@ -13,6 +13,56 @@
 
 ---
 
+## 2026-04-30 — Diagnostic CI : logger console + upload TRX
+
+**Branche** : `claude/fix-ci-build-failure-7KfN7`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Le CI / Build & Test (.NET 8) retourne "fail" systématiquement. Cela fait
+> plusieurs sessions Claude entière que je consacre à la résolution de ce bug.
+> Fais une analyse qui permet d'identifier l'origine.
+
+### Analyse
+
+Sur les 5 derniers jours, chaque session a "corrigé" une cause différente
+(rate limiter, `[property:]`, is-pattern, mixed-case email…) sans jamais
+voir le log Actions complet — Claude n'a pas d'accès authentifié à
+`actions/runs/<id>/logs`. Résultat : PR #18 et #19 ont été mergées rouges,
+le bug n'a jamais été reproduit.
+
+Le step de diagnostic actuel (`find … xargs grep`) ne sort rien si
+`dotnet test` plante avant d'écrire le `.trx` (build cassé, host crash).
+D'où l'impression d'échec silencieux.
+
+Correctif minimal : remplacer `--verbosity detailed` global par le logger
+xUnit `console;verbosity=detailed`, qui imprime chaque test qui passe ou
+échoue **directement dans le log GitHub Actions** (sans passer par TRX).
+Ajout d'un `actions/upload-artifact@v4` conditionné par `if: always()`
+pour récupérer le `.trx` même quand le job échoue.
+
+`RunConfiguration.TreatNoTestsAsError=true` durcit le contrat : si la
+découverte des tests retourne 0, le job échoue explicitement au lieu de
+passer vert.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `.github/workflows/ci-server.yml` | Step `Test` : logger console détaillé + TreatNoTestsAsError. Step `Print failing tests` (TRX grep fragile) remplacé par `Upload TRX test results` (artifact, `if: always()`) |
+
+### Security & Privacy review
+
+Modification du workflow CI uniquement. Aucun nouveau secret, aucun
+endpoint, aucune donnée utilisateur, aucun changement d'auth. Les
+artifacts TRX uploadés contiennent les noms des tests et leurs assertions
+— pas de PII (les tests utilisent des emails fictifs `*@example.com` et
+des mots de passe placeholder déjà visibles dans le code source). Les
+invariants `CLAUDE.md` §2 et §3 sont préservés.
+
+---
+
 ## 2026-04-28 — Fix test `Update_forbidden_for_other_creators` (email case normalization)
 
 **Branche** : `claude/build-release-dodorassik-9suGI`

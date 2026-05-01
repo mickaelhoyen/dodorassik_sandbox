@@ -13,6 +13,70 @@
 
 ---
 
+## 2026-05-01 — Correctifs régressions SQLite in-memory (PR #22)
+
+**Branche** : `claude/investigate-sqlite-test-failures-rcuSY`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Analyses la dernière mise à jour (switch SQLite in-memory dans
+> TestingWebAppFactory) et analyses le résultat car plus de tests ont échoué.
+
+### Analyse
+
+La CI de PR #22 (commit `03249b7 Switch tests from EF InMemory to SQLite
+in-memory`) a montré plus de tests rouges qu'avant la migration. Deux causes
+racines identifiées par revue de code :
+
+**1. `HasColumnType("jsonb")` non compatible avec SQLite**
+
+`AppDbContext.OnModelCreating` appliquait inconditionnellement
+`HasColumnType("jsonb")` sur `HuntStep.ParamsJson`, `StepSubmission.PayloadJson`
+et `StepTemplate.ParamsJson`. Cette annotation est spécifique à PostgreSQL. Avec
+le provider SQLite, EF Core 8 ne dispose pas de mapping pour le type `"jsonb"` ;
+`EnsureCreated()` peut échouer ou créer des colonnes avec un type non résolu,
+provoquant des erreurs en cascade sur toutes les opérations DB des tests.
+
+Correctif : protéger chaque appel par `if (Database.IsNpgsql())` (méthode
+d'extension Npgsql). Le schéma de production (migrations) n'est pas affecté :
+les migrations ont été générées avec Npgsql et gardent `jsonb` dans leur snapshot.
+
+**2. `PRAGMA foreign_keys = ON` non envoyé à la connexion pré-ouverte**
+
+EF Core SQLite envoie `PRAGMA foreign_keys = ON` uniquement dans
+`OpenDbConnection()`. Puisque `TestingWebAppFactory` ouvre la connexion
+elle-même avant de la confier à EF Core, EF Core ne la ré-ouvre jamais → le
+PRAGMA n'est jamais envoyé → les FK (cascade, restrict, setNull) sont
+silencieusement ignorées → les tests qui testent les contraintes relationnelles
+passent par erreur ou échouent de façon inattendue.
+
+Correctif : envoyer le PRAGMA manuellement après `_connection.Open()` dans le
+constructeur de `TestingWebAppFactory`.
+
+**3. Robustesse de la suppression du service Npgsql (bonus)**
+
+La version initiale utilisait `services.Single(...)` pour trouver le descriptor
+`DbContextOptions<AppDbContext>` à remplacer. `Single` lève si zéro ou plusieurs
+résultats, ce qui pourrait casser si l'enregistrement évolue. Remplacé par une
+boucle `RemoveAll` + `Remove` qui est idempotente et future-proof.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Infrastructure/Persistence/AppDbContext.cs` | Guard `if (Database.IsNpgsql())` autour des 3 appels `HasColumnType("jsonb")` |
+| `server/tests/Dodorassik.Api.Tests/TestingWebAppFactory.cs` | PRAGMA foreign_keys en constructeur + passage à `RemoveAll` pour supprimer le service Npgsql |
+
+### Security & Privacy review
+
+Changements de configuration de test et de mapping de modèle uniquement. Aucun
+nouveau endpoint, aucun nouveau champ stocké, aucun secret. Le comportement en
+production (Npgsql) est identique : `IsNpgsql()` est vrai → `jsonb` appliqué
+comme avant. Les invariants `CLAUDE.md` §2 et §3 restent satisfaits.
+
+---
+
 ## 2026-04-30 — Migration tests EF InMemory → SQLite in-memory
 
 **Branche** : `claude/fix-ci-build-failure-7KfN7`

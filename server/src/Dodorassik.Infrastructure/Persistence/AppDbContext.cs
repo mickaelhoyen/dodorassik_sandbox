@@ -51,7 +51,9 @@ public class AppDbContext : DbContext
         {
             e.Property(s => s.Title).HasMaxLength(256).IsRequired();
             e.Property(s => s.Description).HasMaxLength(4000);
-            e.Property(s => s.ParamsJson).HasColumnType("jsonb");
+            // jsonb is PostgreSQL-specific; SQLite (used in tests) needs the default TEXT mapping.
+            if (Database.IsNpgsql())
+                e.Property(s => s.ParamsJson).HasColumnType("jsonb");
             e.HasIndex(s => new { s.HuntId, s.Order });
         });
 
@@ -64,7 +66,8 @@ public class AppDbContext : DbContext
 
         b.Entity<StepSubmission>(e =>
         {
-            e.Property(s => s.PayloadJson).HasColumnType("jsonb");
+            if (Database.IsNpgsql())
+                e.Property(s => s.PayloadJson).HasColumnType("jsonb");
             e.HasOne(s => s.Step).WithMany().HasForeignKey(s => s.HuntStepId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.Family).WithMany().HasForeignKey(s => s.FamilyId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(s => s.SubmittedBy).WithMany().HasForeignKey(s => s.SubmittedById).OnDelete(DeleteBehavior.Restrict);
@@ -102,7 +105,8 @@ public class AppDbContext : DbContext
             e.Property(t => t.Title).HasMaxLength(256).IsRequired();
             e.Property(t => t.Description).HasMaxLength(4000);
             e.Property(t => t.Tags).HasMaxLength(512);
-            e.Property(t => t.ParamsJson).HasColumnType("jsonb");
+            if (Database.IsNpgsql())
+                e.Property(t => t.ParamsJson).HasColumnType("jsonb");
             e.HasOne(t => t.CreatedBy).WithMany().HasForeignKey(t => t.CreatedById).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(t => new { t.CreatedById, t.IsPublic });
         });

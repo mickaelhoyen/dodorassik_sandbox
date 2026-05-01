@@ -27,6 +27,13 @@ public class TestingWebAppFactory : WebApplicationFactory<Program>
         // (IClassFixture) gets its own factory → its own isolated DB.
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
+
+        // EF Core SQLite sends PRAGMA foreign_keys = ON only when *it* opens
+        // the connection. Since we pre-open and hand the connection in, we must
+        // send the PRAGMA ourselves so cascade/restrict semantics are enforced.
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "PRAGMA foreign_keys = ON;";
+        cmd.ExecuteNonQuery();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -47,10 +54,15 @@ public class TestingWebAppFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Replace the Npgsql DbContext with a SQLite one bound to our
-            // shared in-memory connection.
-            var npgsqlDescriptor = services.Single(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-            services.Remove(npgsqlDescriptor);
+            // Remove ALL DbContextOptions<AppDbContext> descriptors (Npgsql registers
+            // exactly one via TryAdd, but we use RemoveAll to be future-proof).
+            var toRemove = services
+                .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>))
+                .ToList();
+            foreach (var d in toRemove)
+                services.Remove(d);
+
+            // Replace with a SQLite DbContext bound to our shared in-memory connection.
             services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(_connection));
         });
     }

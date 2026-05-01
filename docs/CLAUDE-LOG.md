@@ -13,6 +13,51 @@
 
 ---
 
+## 2026-04-30 — Fix `Update_replaces_steps_and_removes_orphans` (orphans encore dans la nav)
+
+**Branche** : `claude/fix-ci-build-failure-7KfN7`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Essayes A [fixer `HuntsController.Update`].
+
+### Analyse
+
+Avec le logger `console;verbosity=detailed` ajouté plus tôt, le log Actions a
+enfin révélé le test rouge : `HuntsApiTests.Update_replaces_steps_and_removes_orphans`
+échouait sur `put.StatusCode.Should().Be(OK)` avec un 500. La stack trace pointait
+`HuntsController.cs:272` (le `SaveChangesAsync` du PUT) avec
+`DbUpdateConcurrencyException: Attempted to update or delete an entity that does
+not exist in the store.`
+
+Cause exacte : le code retirait les steps orphelins via `_db.HuntSteps.Remove(s)`
+uniquement, sans les retirer de `hunt.Steps` navigation. Au SaveChanges, EF
+re-scanne la nav (qui contient encore l'orphelin marqué Deleted + le nouveau step
+ajouté + l'existant modifié) ; le relationship fixup d'EF ré-attache l'orphelin
+en état incohérent, ce qui plante en InMemory. PostgreSQL tolérerait probablement
+mais c'est un bug latent : la collection `Steps` ne reflétait pas l'intention du
+contrôleur après modification.
+
+Correctif : retirer aussi de la nav `hunt.Steps.Remove(s)` (puis garder
+`_db.HuntSteps.Remove(s)` pour être explicite — la cascade-orphan-removal d'EF
+suffirait techniquement avec FK requise + cascade configurée, mais l'appel
+explicite documente l'intention). Idem pour les clues.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Api/Controllers/HuntsController.cs` | `Update` : retirer les orphelins (steps + clues) de la nav avant `Remove` sur le DbSet |
+
+### Security & Privacy review
+
+Aucun changement d'auth, aucun nouvel endpoint, aucun champ stocké ajouté.
+Le comportement fonctionnel reste identique du point de vue API (PUT replace
+steps + clues). Les invariants `CLAUDE.md` §2 et §3 sont préservés.
+
+---
+
 ## 2026-04-30 — Diagnostic CI : logger console + upload TRX
 
 **Branche** : `claude/fix-ci-build-failure-7KfN7`

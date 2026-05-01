@@ -13,6 +13,61 @@
 
 ---
 
+## 2026-04-30 — Migration tests EF InMemory → SQLite in-memory
+
+**Branche** : `claude/fix-ci-build-failure-7KfN7`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> [Le test échoue toujours après le fix HuntsController]. ok [pour passer à
+> SQLite].
+
+### Analyse
+
+Le fix précédent (commit 709f63c, retirer les orphelins de la navigation
+avant `DbSet.Remove`) a bien pris effet — le log Actions confirme que la nav
+contient maintenant `1 added, 1 removed` au lieu de `1 added, 0 removed` —
+mais l'exception persiste, identique :
+`InMemoryTable.Update: Attempted to update or delete an entity that does
+not exist in the store.`
+
+C'est donc un bug du provider EF Core InMemory, pas du contrôleur. Microsoft
+documente officiellement qu'InMemory ne respecte pas les sémantiques
+relationnelles (cascade delete, orphan removal, transactions) et recommande
+SQLite in-memory ou Testcontainers pour les tests d'intégration.
+
+Décision : revert du fix HuntsController (faux trail) et migration de
+`TestingWebAppFactory` vers SQLite in-memory. Une `SqliteConnection` ouverte
+sur `DataSource=:memory:` reste vivante tant que la factory existe ; chaque
+test class (IClassFixture) garde donc une DB isolée. La colonne `jsonb` du
+modèle est acceptée telle quelle par SQLite (typage dynamique).
+
+Alternatives rejetées :
+- **Skip du test** : ferme le ticket vert mais laisse les futurs tests
+  CRUD complexes butter sur le même bug InMemory.
+- **Testcontainers (Postgres réel)** : besoin de Docker dans le runner CI ;
+  rejeté en avril (cf. CLAUDE-LOG du 26/04).
+- **Garder le fix HuntsController** : il ne corrige rien et complexifie le
+  code inutilement.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/tests/Dodorassik.Api.Tests/Dodorassik.Api.Tests.csproj` | `EntityFrameworkCore.InMemory` → `EntityFrameworkCore.Sqlite` |
+| `server/tests/Dodorassik.Api.Tests/TestingWebAppFactory.cs` | Connexion SQLite partagée + `EnsureCreated()` via `CreateHost` override + cleanup dans `Dispose` |
+| `server/src/Dodorassik.Api/Controllers/HuntsController.cs` | Revert du fix orphan-nav du commit 709f63c (inutile) |
+
+### Security & Privacy review
+
+Changements de tooling de test uniquement. Le code de production
+(`HuntsController`) revient à son état d'avant 709f63c. Aucun nouveau
+secret, endpoint ou champ stocké. Les invariants `CLAUDE.md` §2 et §3
+restent satisfaits.
+
+---
+
 ## 2026-04-30 — Fix `Update_replaces_steps_and_removes_orphans` (orphans encore dans la nav)
 
 **Branche** : `claude/fix-ci-build-failure-7KfN7`

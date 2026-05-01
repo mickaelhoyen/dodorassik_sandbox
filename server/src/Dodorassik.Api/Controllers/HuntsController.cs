@@ -192,10 +192,7 @@ public class HuntsController : ControllerBase
             .Where(s => !incomingStepIds.Contains(s.Id))
             .ToList();
         foreach (var s in stepsToRemove)
-        {
-            hunt.Steps.Remove(s);
             _db.HuntSteps.Remove(s);
-        }
 
         var order = 0;
         foreach (var sr in req.Steps ?? [])
@@ -242,10 +239,7 @@ public class HuntsController : ControllerBase
             .Where(c => !incomingClueIds.Contains(c.Id))
             .ToList();
         foreach (var c in cluesToRemove)
-        {
-            hunt.Clues.Remove(c);
             _db.Clues.Remove(c);
-        }
 
         var codesSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var cr in req.Clues ?? [])

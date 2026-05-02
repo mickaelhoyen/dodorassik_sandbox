@@ -5,12 +5,15 @@ using Dodorassik.Api.Auth;
 using Dodorassik.Api.Hubs;
 using Dodorassik.Api.Services;
 using Dodorassik.Core.Abstractions;
+using Dodorassik.Infrastructure.Assistant;
+using Dodorassik.Infrastructure.Persistence.Seed;
 using Dodorassik.Infrastructure.Persistence;
 using Dodorassik.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +21,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Database
 // -----------------------------------------------------------------------
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+    opt.UseNpgsql(
+        builder.Configuration.GetConnectionString("Postgres"),
+        o => o.UseVector()));
 
 // -----------------------------------------------------------------------
 // Auth — JWT bearer + PBKDF2 password hashing
@@ -28,6 +33,37 @@ builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddScoped<IAntiCheatService, AntiCheatService>();
+
+// -----------------------------------------------------------------------
+// Game Design Assistant — C1 ContextBuilder
+// -----------------------------------------------------------------------
+var externalApis = builder.Configuration.GetSection("ExternalApis");
+
+builder.Services.AddHttpClient("overpass", c =>
+{
+    c.BaseAddress = new Uri(externalApis["OverpassUrl"] ?? "https://overpass-api.de/api/interpreter");
+    c.Timeout = TimeSpan.FromSeconds(10);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("Dodorassik/1.0 (game-design-assistant)");
+});
+
+builder.Services.AddHttpClient("wikidata", c =>
+{
+    c.BaseAddress = new Uri(externalApis["WikidataSparqlUrl"] ?? "https://query.wikidata.org/sparql");
+    c.Timeout = TimeSpan.FromSeconds(8);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("Dodorassik/1.0 (game-design-assistant)");
+    c.DefaultRequestHeaders.Accept.ParseAdd("application/sparql-results+json");
+});
+
+builder.Services.AddScoped<ILocationEnricher, LocationEnricher>();
+builder.Services.AddScoped<IPhotoAnalyzer, StubPhotoAnalyzer>();
+builder.Services.AddScoped<IContextBuilderService, ContextBuilderService>();
+
+// -----------------------------------------------------------------------
+// Game Design Assistant — C2 Knowledge RAG
+// -----------------------------------------------------------------------
+builder.Services.AddScoped<ITextEmbedder, StubTextEmbedder>();
+builder.Services.AddScoped<IGameKnowledgeRepository, GameKnowledgeRepository>();
+builder.Services.AddScoped<GameMechanicsSeeder>();
 
 // Don't remap "sub" / "role" — we want the raw JWT claim names.
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
@@ -118,6 +154,12 @@ builder.Services.AddRateLimiter(options =>
     {
         o.PermitLimit = isDev ? 10_000 : 30;
         o.Window = TimeSpan.FromMinutes(1);
+        o.QueueLimit = 0;
+    });
+    options.AddFixedWindowLimiter("generate-context", o =>
+    {
+        o.PermitLimit = isDev ? 10_000 : 10;
+        o.Window = TimeSpan.FromHours(1);
         o.QueueLimit = 0;
     });
 

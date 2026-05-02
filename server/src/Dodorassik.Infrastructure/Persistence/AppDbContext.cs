@@ -1,4 +1,5 @@
 using Dodorassik.Core.Domain;
+using Dodorassik.Core.Domain.Assistant;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dodorassik.Infrastructure.Persistence;
@@ -8,6 +9,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<GameMechanic> GameMechanics => Set<GameMechanic>();
     public DbSet<Family> Families => Set<Family>();
     public DbSet<Hunt> Hunts => Set<Hunt>();
     public DbSet<HuntStep> HuntSteps => Set<HuntStep>();
@@ -21,6 +23,25 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+
+        if (Database.IsNpgsql())
+            b.HasPostgresExtension("vector");
+
+        b.Entity<GameMechanic>(e =>
+        {
+            e.HasKey(g => g.Id);
+            e.Property(g => g.Title).HasMaxLength(256).IsRequired();
+            e.Property(g => g.SourceGame).HasMaxLength(256).IsRequired();
+            e.Property(g => g.Format).HasMaxLength(32).IsRequired();
+            // text[] et vector(1536) sont des types PostgreSQL — SQLite les ignore gracieusement.
+            if (Database.IsNpgsql())
+            {
+                e.Property(g => g.Mechanics).HasColumnType("text[]");
+                e.Property(g => g.Themes).HasColumnType("text[]");
+                e.Property(g => g.Embedding).HasColumnType("vector(1536)");
+            }
+            e.HasIndex(g => g.Format);
+        });
 
         b.Entity<User>(e =>
         {

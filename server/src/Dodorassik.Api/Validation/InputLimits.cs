@@ -26,4 +26,10 @@ public static class InputLimits
     public const int ClueTitleMaxLength = 256;
     public const int ClueRevealMaxLength = 4_000;
     public const int CluesPerHuntMax = 200;
+
+    // Game Design Assistant — C1 ContextBuilder
+    public const int PhotosPerContextMax = 5;
+    public const int PhotoMaxBytes = 2 * 1024 * 1024;       // 2 Mo par photo
+    public const int SponsorsPerHuntMax = 10;
+    public const long GenerateContextMaxBytes = 12 * 1024 * 1024; // 5 photos + overhead
 }

@@ -121,3 +121,57 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       `docker-compose.yml` enrichi avec service `api` + healthcheck postgres,
       secrets passés via variables d'environnement (`JWT_SECRET`, `POSTGRES_PASSWORD`,
       `CORS_ORIGIN`), `server/.dockerignore`.
+
+## Phase 6 — Assistant de game design en réalité terrain
+
+> Architecture complète documentée dans `docs/GAME-DESIGN-ASSISTANT.md`.
+
+### Phase 6a — C1 ContextBuilder (🚧 en cours)
+
+- [x] **Documentation C1→C3** : `docs/GAME-DESIGN-ASSISTANT.md` — couches,
+      interfaces, endpoints, privacy/security review.
+- [x] **Domaine Assistant** : records `AudienceProfile`, `GpsPoint`,
+      `SponsorConstraint`, `LocationContext`, `PhotoAnalysisResult`, `HuntContext`
+      dans `Dodorassik.Core/Domain/Assistant/`.
+- [x] **Abstractions** : `IContextBuilderService`, `ILocationEnricher`,
+      `IPhotoAnalyzer` dans `Dodorassik.Core/Abstractions/`.
+- [x] **LocationEnricher** (Infrastructure) : appels OpenStreetMap Overpass API
+      + Wikidata SPARQL, timeouts courts, résultat vide si échec réseau.
+- [x] **StubPhotoAnalyzer** (Infrastructure) : placeholder jusqu'à C3 ; photos
+      lues en mémoire et immédiatement jetées, rien persisté.
+- [x] **ContextBuilderService** (Api) : orchestre LocationEnricher + PhotoAnalyzer
+      en parallèle.
+- [x] **HuntGenerationController** : `POST /api/hunts/generate/context`
+      (`[Authorize(Roles="creator,super_admin")]`), multipart/form-data,
+      rate limit 10 req/h.
+
+### Phase 6b — C2 Knowledge RAG (🚧 en cours)
+
+- [x] `pgvector` sur PostgreSQL : `Pgvector.EntityFrameworkCore` 0.3.0,
+      `UseVector()` sur `UseNpgsql`, `HasPostgresExtension("vector")`,
+      migration `20260502120000_AddGameMechanics`.
+- [x] Entité `GameMechanic` avec colonne `vector(1536)` (embedding null par défaut),
+      index HNSW `vector_cosine_ops` créé via SQL raw dans la migration.
+- [x] `IGameKnowledgeRepository` + `GameKnowledgeRepository` :
+      cosine similarity pgvector si embedding disponible,
+      sinon scoring par chevauchement de tags + adéquation audience (fallback).
+- [x] `ITextEmbedder` + `StubTextEmbedder` (active le fallback tag scoring).
+- [x] Seed data JSON embarquée : 68 fiches jeux curatées
+      (boardgame, videogame, escape, geocaching, larp, outdoor).
+- [x] `GameMechanicsSeeder` : idempotent, lit le JSON embarqué dans l'assembly,
+      enregistré comme service Scoped.
+- [x] `POST /api/hunts/generate/mechanics` (`[Authorize]`, rate limit partagé) :
+      prend un `HuntContextDto`, compose le texte RAG via `HuntContextQueryComposer`,
+      retourne `RagHitDto[]`.
+- [ ] Génération des embeddings pour les 68 fiches (script offline, nécessite
+      une clé OpenAI ou alternative — à faire lors de la mise en prod)
+- [ ] Peuplement étendu : BoardGameGeek API (~500 jeux supplémentaires)
+
+### Phase 6c — C3 DesignGenerator (Claude API)
+
+- [ ] `Anthropic.SDK` + `SixLabors.ImageSharp`
+- [ ] `ClaudePhotoAnalyzer` remplaçant `StubPhotoAnalyzer` (vision multimodale)
+- [ ] `IDesignGeneratorService` + implémentation Claude — prompt chain 3 passes
+- [ ] `POST /api/hunts/generate/full` avec streaming SSE
+- [ ] Rate limit 5 req/h par créateur
+- [ ] Intégration Godot : écran `hunt_generator` déclenché depuis `creator_home`

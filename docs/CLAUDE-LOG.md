@@ -13,6 +13,157 @@
 
 ---
 
+## 2026-05-02 — Game Design Assistant C2 : Knowledge RAG + pgvector
+
+**Branche** : `claude/location-game-assistant-KGJDw`
+
+### Requête utilisateur
+
+> "Démarres l'implémentation de C2"
+
+### Analyse
+
+C2 est la couche de recherche sémantique qui retrouve les mécaniques de jeux
+les plus pertinentes par rapport au contexte d'une chasse.
+
+Décisions clés :
+- **`float[]` pour les embeddings** plutôt que le type `Vector` de pgvector,
+  pour éviter la dépendance sur le namespace `Pgvector` dans Core. Le type
+  `vector(1536)` est déclaré comme `HasColumnType("vector(1536)")` dans EF.
+- **Fallback tag scoring** : quand l'embedder retourne null (StubTextEmbedder),
+  le repository score les fiches par chevauchement de mots-clés + adéquation
+  d'audience. C2 est donc fonctionnel dès maintenant sans clé API embedding.
+- **68 fiches curatées** embarquées comme ressource JSON dans l'assembly —
+  pas de dépendance réseau au démarrage, seed idempotent.
+- **Migration manuelle** : `dotnet` non disponible dans ce sandbox, migration
+  écrite à la main avec index HNSW via `migrationBuilder.Sql()` (EF Core ne
+  supporte pas nativement `vector_cosine_ops`).
+- **Endpoint `POST /api/hunts/generate/mechanics`** reprend le même rate limit
+  `generate-context` que C1 — partage le quota de 10 req/h.
+
+### Fichiers modifiés / créés
+
+| Fichier | Nature |
+|---------|--------|
+| `server/src/Dodorassik.Infrastructure/Dodorassik.Infrastructure.csproj` | Ajout `Pgvector.EntityFrameworkCore` 0.3.0 + EmbeddedResource JSON |
+| `server/src/Dodorassik.Api/Dodorassik.Api.csproj` | Ajout `Pgvector.EntityFrameworkCore` (pour `UseVector()` dans Program.cs) |
+| `Core/Domain/Assistant/GameMechanic.cs` | Nouveau — entité avec `float[]? Embedding` |
+| `Core/Domain/Assistant/RagHit.cs` | Nouveau — record résultat |
+| `Core/Abstractions/IGameKnowledgeRepository.cs` | Nouveau — interface |
+| `Core/Abstractions/ITextEmbedder.cs` | Nouveau — interface |
+| `Infrastructure/Assistant/GameKnowledgeRepository.cs` | Nouveau — pgvector + fallback tag |
+| `Infrastructure/Assistant/StubTextEmbedder.cs` | Nouveau — retourne null |
+| `Infrastructure/Persistence/Seed/game_mechanics.json` | Nouveau — 68 fiches curatées |
+| `Infrastructure/Persistence/Seed/GameMechanicsSeeder.cs` | Nouveau — seed idempotent |
+| `Infrastructure/Persistence/AppDbContext.cs` | Ajout GameMechanics DbSet + config pgvector |
+| `Infrastructure/Persistence/Migrations/20260502120000_AddGameMechanics.cs` | Nouveau — migration manuelle |
+| `Infrastructure/Persistence/Migrations/20260502120000_AddGameMechanics.Designer.cs` | Nouveau — snapshot migration |
+| `Infrastructure/Persistence/Migrations/AppDbContextModelSnapshot.cs` | Mise à jour — ajout GameMechanic |
+| `Api/Dtos/HuntGenerationDtos.cs` | Ajout `MechanicsRequestDto`, `RagHitDto` |
+| `Api/Services/HuntContextQueryComposer.cs` | Nouveau — compose le texte RAG |
+| `Api/Controllers/HuntGenerationController.cs` | Ajout endpoint `POST /mechanics` |
+| `Api/Program.cs` | `UseVector()`, services C2, using Pgvector |
+| `docs/ROADMAP.md` | Phase 6b mise à jour |
+
+### Security & Privacy review
+
+- **Pas de PII** : `GameMechanic` ne contient que des données de conception
+  de jeux — aucune donnée utilisateur.
+- **Seed data** : uniquement des données de jeux publics (BoardGameGeek,
+  concepts pédagogiques). Aucun User, Family ni StepSubmission dans le seed —
+  conforme CLAUDE.md §4.
+- **Endpoint protégé** : `[Authorize(Roles="creator,super_admin")]` hérité
+  du contrôleur.
+- **Pas de secrets** : `StubTextEmbedder` ne nécessite aucune clé API.
+  Quand un vrai embedder sera connecté, la clé passera par user-secrets / env.
+- **Embeddings null par défaut** : la colonne `vector(1536)` est nullable —
+  la table est exploitable (fallback tags) sans avoir exécuté l'embedder.
+
+---
+
+## 2026-05-02 — Game Design Assistant C1 : documentation + implémentation ContextBuilder
+
+**Branche** : `claude/location-game-assistant-KGJDw`
+
+### Requête utilisateur
+
+> "Documentes dans le projet tous les steps jusqu'à la C3 et commences à
+> implémenter la C1"
+>
+> (Précédée d'une analyse conversationnelle de l'opportunité de créer un
+> assistant IA de game design en réalité terrain, et d'une clarification sur
+> ce qu'apportent C1+C2 sans la couche Claude C3.)
+
+### Analyse
+
+L'assistant de game design est découpé en 3 couches indépendantes et
+progressivement activables :
+- **C1 (ContextBuilder)** : enrichissement multimodal des données brutes —
+  GPS → OSM/Wikidata, photos → stub (Claude vision en C3), profil et sponsors
+  → records typés. Retourne un `HuntContext` structuré sans aucune génération.
+- **C2 (Knowledge RAG)** : recherche vectorielle dans une base de mécaniques
+  de jeux (pgvector). Propose des templates de jeux adaptés au contexte.
+  Non implémentée, interfaces définies dans la doc.
+- **C3 (DesignGenerator)** : Claude API, prompt chain 3 passes, génération
+  complète d'une chasse. Non implémentée, architecture documentée.
+
+Choix pour C1 :
+- `LocationEnricher` appelle **OSM Overpass API** et **Wikidata SPARQL** —
+  deux APIs publiques, sans clé, RGPD-safe (seules des coordonnées de lieux
+  partent, jamais de données utilisateur).
+- `StubPhotoAnalyzer` est un placeholder que `ClaudePhotoAnalyzer` (C3)
+  remplacera via DI sans changer les interfaces.
+- Timeouts courts (8-10 s) avec dégradation gracieuse (résultat vide si
+  l'API externe ne répond pas).
+- L'endpoint est `[Authorize(Roles="creator,super_admin")]` — inaccessible
+  en mode joueur anonyme.
+- Rate limit dédié : 10 req/h pour éviter les abus sur les APIs externes.
+
+### Fichiers modifiés / créés
+
+| Fichier | Nature |
+|---------|--------|
+| `docs/GAME-DESIGN-ASSISTANT.md` | Nouveau — architecture complète C1→C3 |
+| `docs/ROADMAP.md` | Ajout Phase 6 (6a implémentée, 6b/6c planifiées) |
+| `server/src/Dodorassik.Core/Domain/Assistant/AudienceProfile.cs` | Nouveau — record + enum MobilityLevel |
+| `server/src/Dodorassik.Core/Domain/Assistant/GpsPoint.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/SponsorConstraint.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/LocationContext.cs` | Nouveau — records NearbyPoi, WikidataFact, LocationContext |
+| `server/src/Dodorassik.Core/Domain/Assistant/PhotoAnalysisResult.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/HuntContext.cs` | Nouveau — record agrégat |
+| `server/src/Dodorassik.Core/Abstractions/IContextBuilderService.cs` | Nouveau — interface + BuildContextRequest |
+| `server/src/Dodorassik.Core/Abstractions/ILocationEnricher.cs` | Nouveau — interface |
+| `server/src/Dodorassik.Core/Abstractions/IPhotoAnalyzer.cs` | Nouveau — interface |
+| `server/src/Dodorassik.Infrastructure/Assistant/LocationEnricher.cs` | Nouveau — OSM Overpass + Wikidata SPARQL |
+| `server/src/Dodorassik.Infrastructure/Assistant/StubPhotoAnalyzer.cs` | Nouveau — placeholder C1 |
+| `server/src/Dodorassik.Api/Dtos/HuntGenerationDtos.cs` | Nouveau — DTOs request/response |
+| `server/src/Dodorassik.Api/Services/ContextBuilderService.cs` | Nouveau — orchestrateur C1 |
+| `server/src/Dodorassik.Api/Controllers/HuntGenerationController.cs` | Nouveau — POST /api/hunts/generate/context |
+| `server/src/Dodorassik.Api/Validation/InputLimits.cs` | Ajout constantes photos/sponsors/taille requête |
+| `server/src/Dodorassik.Api/Program.cs` | Enregistrement services + HttpClients nommés + rate limiter |
+| `server/src/Dodorassik.Api/appsettings.json` | Ajout section ExternalApis |
+
+### Security & Privacy review
+
+- **Pas de PII** : les appels OSM/Wikidata n'envoient que des coordonnées de
+  lieux (données publiques). Aucun email, token ou identifiant utilisateur
+  ne quitte le serveur vers des tiers.
+- **Photos non persistées** : les `Stream` sont lus en mémoire, passés au
+  `StubPhotoAnalyzer` (qui ne lit pas le contenu), puis `DisposeAsync()` dans
+  le bloc `finally` du contrôleur. Rien n'est écrit en base ni sur disque.
+- **GPS = lieux, pas traces joueurs** : conforme CLAUDE.md §3 invariant 2.
+- **Authentification** : `[Authorize(Roles="creator,super_admin")]` — mode
+  joueur anonyme n'a pas accès.
+- **Rate limiting** : `generate-context` 10 req/h en prod — protège les APIs
+  externes d'un abus.
+- **Validation DTO** : `[Range]`, `[StringLength]`, `[Required]` sur tous les
+  champs entrants. Refus 400 si invalide.
+- **RequestSizeLimit** : 12 Mo max (5 photos × 2 Mo + overhead).
+- **Pas de secret ajouté** : les URLs Overpass/Wikidata sont des APIs publiques,
+  pas de clé API requise.
+
+---
+
 ## 2026-05-02 — Corrections résiduelles SQLite (PR #23 incomplète)
 
 **Branche** : `claude/fix-ci-build-failure-7KfN7`

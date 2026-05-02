@@ -3,7 +3,6 @@ using Dodorassik.Core.Domain.Assistant;
 using Dodorassik.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Pgvector.EntityFrameworkCore;
 
 namespace Dodorassik.Infrastructure.Assistant;
 
@@ -29,47 +28,17 @@ public class GameKnowledgeRepository : IGameKnowledgeRepository
         int limit,
         CancellationToken ct)
     {
+        // StubTextEmbedder always returns null; vector search will be wired up in C3
+        // when a real embedder is registered.
         var embedding = await _embedder.EmbedAsync(queryText, ct);
+        if (embedding is not null)
+            _logger.LogInformation("Embedding available ({Dims} dims) — falling through to tag search (vector search deferred to C3)", embedding.Length);
 
-        return embedding is not null
-            ? await VectorSearchAsync(embedding, audience, limit, ct)
-            : await TagSearchAsync(queryText, audience, limit, ct);
+        return await TagSearchAsync(queryText, audience, limit, ct);
     }
 
     public Task<int> CountAsync(CancellationToken ct)
         => _db.GameMechanics.CountAsync(ct);
-
-    // ─── Recherche vectorielle (pgvector cosine) ───────────────────────────
-
-    private async Task<IReadOnlyList<RagHit>> VectorSearchAsync(
-        float[] queryEmbedding,
-        AudienceProfile audience,
-        int limit,
-        CancellationToken ct)
-    {
-        // Cosine distance [0..2], plus petit = plus similaire.
-        // On filtre d'abord par tranche d'âge pour éviter des propositions
-        // inadaptées, puis on trie par distance vectorielle.
-        var results = await _db.GameMechanics
-            .Where(g => g.Embedding != null)
-            .Where(g => g.AgeMin <= audience.AgeMax && (g.AgeMax == null || g.AgeMax >= audience.AgeMin))
-            .OrderBy(g => EF.Functions.CosineDistance(g.Embedding!, queryEmbedding))
-            .Take(limit)
-            .Select(g => new
-            {
-                g.Id, g.Title, g.SourceGame, g.Mechanics, g.Themes,
-                g.AgeMin, g.AgeMax, g.DurationMinutes, g.Format,
-                Distance = EF.Functions.CosineDistance(g.Embedding!, queryEmbedding)
-            })
-            .ToListAsync(ct);
-
-        return results
-            .Select(r => new RagHit(
-                r.Id, r.Title, r.SourceGame, r.Mechanics, r.Themes,
-                r.AgeMin, r.AgeMax, r.DurationMinutes, r.Format,
-                Score: 1f - (float)(r.Distance / 2f)))
-            .ToList();
-    }
 
     // ─── Scoring par tags (fallback sans embedder) ─────────────────────────
 
@@ -79,8 +48,6 @@ public class GameKnowledgeRepository : IGameKnowledgeRepository
         int limit,
         CancellationToken ct)
     {
-        // Extrait des mots-clés simples depuis le texte de requête pour le
-        // chevauchement de tags — suffisant pour un prototype fonctionnel.
         var keywords = ExtractKeywords(queryText);
 
         var candidates = await _db.GameMechanics
@@ -110,7 +77,6 @@ public class GameKnowledgeRepository : IGameKnowledgeRepository
             ? Math.Max(0f, 1f - Math.Abs(g.DurationMinutes.Value - audience.DurationMinutes) / 60f)
             : 0.5f;
 
-        // Formule : 60 % chevauchement tags, 30 % mobilité/format, 10 % durée.
         var mobilityPenalty = audience.Mobility == MobilityLevel.Wheelchair
             && g.Format is "outdoor" or "larp" or "geocaching" ? 0.3f : 0f;
 
@@ -119,7 +85,6 @@ public class GameKnowledgeRepository : IGameKnowledgeRepository
 
     private static HashSet<string> ExtractKeywords(string queryText)
     {
-        // Tokenise le texte de requête en mots non vides de longueur ≥ 3.
         return queryText
             .ToLowerInvariant()
             .Split([' ', ',', '.', ':', ';', '\n', '\r', '(', ')'], StringSplitOptions.RemoveEmptyEntries)

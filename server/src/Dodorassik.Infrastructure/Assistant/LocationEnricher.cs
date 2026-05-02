@@ -111,16 +111,18 @@ public class LocationEnricher : ILocationEnricher
         var lon = center.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         // SPARQL : éléments Wikidata dans le rayon géographique.
-        var sparql = $"""
-            SELECT ?item ?itemLabel ?itemDescription WHERE {{
-              SERVICE wikibase:around {{
+        // $$""" (two $) so single { } are literal SPARQL block delimiters and
+        // {{ }} mark the actual interpolation holes.
+        var sparql = $$"""
+            SELECT ?item ?itemLabel ?itemDescription WHERE {
+              SERVICE wikibase:around {
                 ?item wdt:P625 ?location .
-                bd:serviceParam wikibase:center "Point({lon} {lat})"^^geo:wktLiteral .
-                bd:serviceParam wikibase:radius "{WikidataRadiusKm}" .
-              }}
-              SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{lang},en" . }}
-            }}
-            LIMIT {WikidataMaxResults}
+                bd:serviceParam wikibase:center "Point({{lon}} {{lat}})"^^geo:wktLiteral .
+                bd:serviceParam wikibase:radius "{{WikidataRadiusKm}}" .
+              }
+              SERVICE wikibase:label { bd:serviceParam wikibase:language "{{lang}},en" . }
+            }
+            LIMIT {{WikidataMaxResults}}
             """;
 
         try

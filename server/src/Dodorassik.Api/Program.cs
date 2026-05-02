@@ -13,8 +13,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Pgvector.EntityFrameworkCore;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // -----------------------------------------------------------------------
@@ -22,8 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 // -----------------------------------------------------------------------
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(
-        builder.Configuration.GetConnectionString("Postgres"),
-        o => o.UseVector()));
+        builder.Configuration.GetConnectionString("Postgres")));
 
 // -----------------------------------------------------------------------
 // Auth — JWT bearer + PBKDF2 password hashing

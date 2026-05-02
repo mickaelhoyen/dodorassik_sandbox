@@ -24,7 +24,8 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(b);
 
-        b.HasPostgresExtension("vector");
+        if (Database.IsNpgsql())
+            b.HasPostgresExtension("vector");
 
         b.Entity<GameMechanic>(e =>
         {
@@ -32,11 +33,13 @@ public class AppDbContext : DbContext
             e.Property(g => g.Title).HasMaxLength(256).IsRequired();
             e.Property(g => g.SourceGame).HasMaxLength(256).IsRequired();
             e.Property(g => g.Format).HasMaxLength(32).IsRequired();
-            e.Property(g => g.Mechanics).HasColumnType("text[]");
-            e.Property(g => g.Themes).HasColumnType("text[]");
-            // Vecteur d'embedding text-embedding-3-small (1536 dimensions).
-            // Null tant que l'embedder offline n'a pas été exécuté.
-            e.Property(g => g.Embedding).HasColumnType("vector(1536)");
+            // text[] et vector(1536) sont des types PostgreSQL — SQLite les ignore gracieusement.
+            if (Database.IsNpgsql())
+            {
+                e.Property(g => g.Mechanics).HasColumnType("text[]");
+                e.Property(g => g.Themes).HasColumnType("text[]");
+                e.Property(g => g.Embedding).HasColumnType("vector(1536)");
+            }
             e.HasIndex(g => g.Format);
         });
 

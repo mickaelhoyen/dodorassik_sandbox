@@ -29,12 +29,14 @@ public class JwtTokenService : IJwtTokenService
     public string Issue(User user)
     {
         var roleSnake = RoleToSnake(user.Role);
+        var tierSnake = TierToSnake(user.Tier);
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("display_name", user.DisplayName),
             new Claim("role", roleSnake),
+            new Claim("tier", tierSnake),
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
@@ -55,5 +57,13 @@ public class JwtTokenService : IJwtTokenService
         UserRole.Creator => "creator",
         UserRole.SuperAdmin => "super_admin",
         _ => "player",
+    };
+
+    public static string TierToSnake(SubscriptionTier tier) => tier switch
+    {
+        SubscriptionTier.Free => "free",
+        SubscriptionTier.Pro => "pro",
+        SubscriptionTier.Enterprise => "enterprise",
+        _ => "free",
     };
 }

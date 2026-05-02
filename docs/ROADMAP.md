@@ -172,6 +172,29 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
 - [ ] `Anthropic.SDK` + `SixLabors.ImageSharp`
 - [ ] `ClaudePhotoAnalyzer` remplaçant `StubPhotoAnalyzer` (vision multimodale)
 - [ ] `IDesignGeneratorService` + implémentation Claude — prompt chain 3 passes
-- [ ] `POST /api/hunts/generate/full` avec streaming SSE
-- [ ] Rate limit 5 req/h par créateur
+- [ ] `POST /api/hunts/generate/design` retourne 501 (stub déjà en place, gated `RequiresPro`)
+- [ ] Rate limit 5 req/h par créateur Pro / illimité Enterprise
 - [ ] Intégration Godot : écran `hunt_generator` déclenché depuis `creator_home`
+
+## Phase 7 — Abonnements
+
+### Phase 7a — Modèle de tiers (✅ implémenté)
+
+- [x] `SubscriptionTier` enum : `Free = 0`, `Pro = 1`, `Enterprise = 2`
+- [x] `User.Tier` + `User.AiGenerationsUsed` (compteur pour quota d'essai)
+- [x] Claim JWT `tier` inclus dans chaque token (`free` / `pro` / `enterprise`)
+- [x] `UserDto.Tier` exposé dans `/api/users/me` et `/api/auth/register|login`
+- [x] Politique d'autorisation `RequiresPro` : Pro ∪ Enterprise ∪ super_admin
+- [x] `POST /api/hunts/generate/design` gated `[Authorize(Policy="RequiresPro")]`
+- [x] Migration `20260502140000_AddSubscriptionTier`
+
+### Phase 7b — Quota d'essai gratuit (à venir)
+
+- [ ] Constante `TrialGenerationsMax = 2` dans `InputLimits`
+- [ ] `SubscriptionService.CheckAndIncrementAsync` : Free → vérifie `AiGenerationsUsed < TrialGenerationsMax`, incrémente, autorise ; sinon 402
+- [ ] Réponse 402 avec `{ "error": "upgrade_required", "trialsUsed": N, "trialsMax": 2 }`
+
+### Phase 7c — Gestion admin des tiers (à venir)
+
+- [ ] `PATCH /api/admin/users/{id}/tier` — super_admin peut changer le tier d'un utilisateur
+- [ ] Interface admin web : colonne Tier dans la liste utilisateurs + bouton upgrade

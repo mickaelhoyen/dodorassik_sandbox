@@ -22,7 +22,7 @@ public record LoginRequest(
 
 public record AuthResponse(string Token, UserDto User);
 
-public record UserDto(Guid Id, string Email, string DisplayName, string Role, Guid? FamilyId);
+public record UserDto(Guid Id, string Email, string DisplayName, string Role, Guid? FamilyId, string Tier);
 
 public record UpdateProfileRequest(
     [StringLength(InputLimits.DisplayNameMaxLength, MinimumLength = InputLimits.DisplayNameMinLength)]

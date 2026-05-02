@@ -12,4 +12,12 @@ public class User
 
     public Guid? FamilyId { get; set; }
     public Family? Family { get; set; }
+
+    public SubscriptionTier Tier { get; set; } = SubscriptionTier.Free;
+
+    /// <summary>
+    /// Nombre de générations C3 consommées (toutes périodes confondues).
+    /// Utilisé pour le quota d'essai gratuit (ex. 2 générations offertes).
+    /// </summary>
+    public int AiGenerationsUsed { get; set; } = 0;
 }

@@ -454,7 +454,13 @@ namespace Dodorassik.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
+                    b.Property<int>("AiGenerationsUsed")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tier")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");

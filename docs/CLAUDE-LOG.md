@@ -13,6 +13,89 @@
 
 ---
 
+## 2026-05-02 — Game Design Assistant C1 : documentation + implémentation ContextBuilder
+
+**Branche** : `claude/location-game-assistant-KGJDw`
+
+### Requête utilisateur
+
+> "Documentes dans le projet tous les steps jusqu'à la C3 et commences à
+> implémenter la C1"
+>
+> (Précédée d'une analyse conversationnelle de l'opportunité de créer un
+> assistant IA de game design en réalité terrain, et d'une clarification sur
+> ce qu'apportent C1+C2 sans la couche Claude C3.)
+
+### Analyse
+
+L'assistant de game design est découpé en 3 couches indépendantes et
+progressivement activables :
+- **C1 (ContextBuilder)** : enrichissement multimodal des données brutes —
+  GPS → OSM/Wikidata, photos → stub (Claude vision en C3), profil et sponsors
+  → records typés. Retourne un `HuntContext` structuré sans aucune génération.
+- **C2 (Knowledge RAG)** : recherche vectorielle dans une base de mécaniques
+  de jeux (pgvector). Propose des templates de jeux adaptés au contexte.
+  Non implémentée, interfaces définies dans la doc.
+- **C3 (DesignGenerator)** : Claude API, prompt chain 3 passes, génération
+  complète d'une chasse. Non implémentée, architecture documentée.
+
+Choix pour C1 :
+- `LocationEnricher` appelle **OSM Overpass API** et **Wikidata SPARQL** —
+  deux APIs publiques, sans clé, RGPD-safe (seules des coordonnées de lieux
+  partent, jamais de données utilisateur).
+- `StubPhotoAnalyzer` est un placeholder que `ClaudePhotoAnalyzer` (C3)
+  remplacera via DI sans changer les interfaces.
+- Timeouts courts (8-10 s) avec dégradation gracieuse (résultat vide si
+  l'API externe ne répond pas).
+- L'endpoint est `[Authorize(Roles="creator,super_admin")]` — inaccessible
+  en mode joueur anonyme.
+- Rate limit dédié : 10 req/h pour éviter les abus sur les APIs externes.
+
+### Fichiers modifiés / créés
+
+| Fichier | Nature |
+|---------|--------|
+| `docs/GAME-DESIGN-ASSISTANT.md` | Nouveau — architecture complète C1→C3 |
+| `docs/ROADMAP.md` | Ajout Phase 6 (6a implémentée, 6b/6c planifiées) |
+| `server/src/Dodorassik.Core/Domain/Assistant/AudienceProfile.cs` | Nouveau — record + enum MobilityLevel |
+| `server/src/Dodorassik.Core/Domain/Assistant/GpsPoint.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/SponsorConstraint.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/LocationContext.cs` | Nouveau — records NearbyPoi, WikidataFact, LocationContext |
+| `server/src/Dodorassik.Core/Domain/Assistant/PhotoAnalysisResult.cs` | Nouveau — record |
+| `server/src/Dodorassik.Core/Domain/Assistant/HuntContext.cs` | Nouveau — record agrégat |
+| `server/src/Dodorassik.Core/Abstractions/IContextBuilderService.cs` | Nouveau — interface + BuildContextRequest |
+| `server/src/Dodorassik.Core/Abstractions/ILocationEnricher.cs` | Nouveau — interface |
+| `server/src/Dodorassik.Core/Abstractions/IPhotoAnalyzer.cs` | Nouveau — interface |
+| `server/src/Dodorassik.Infrastructure/Assistant/LocationEnricher.cs` | Nouveau — OSM Overpass + Wikidata SPARQL |
+| `server/src/Dodorassik.Infrastructure/Assistant/StubPhotoAnalyzer.cs` | Nouveau — placeholder C1 |
+| `server/src/Dodorassik.Api/Dtos/HuntGenerationDtos.cs` | Nouveau — DTOs request/response |
+| `server/src/Dodorassik.Api/Services/ContextBuilderService.cs` | Nouveau — orchestrateur C1 |
+| `server/src/Dodorassik.Api/Controllers/HuntGenerationController.cs` | Nouveau — POST /api/hunts/generate/context |
+| `server/src/Dodorassik.Api/Validation/InputLimits.cs` | Ajout constantes photos/sponsors/taille requête |
+| `server/src/Dodorassik.Api/Program.cs` | Enregistrement services + HttpClients nommés + rate limiter |
+| `server/src/Dodorassik.Api/appsettings.json` | Ajout section ExternalApis |
+
+### Security & Privacy review
+
+- **Pas de PII** : les appels OSM/Wikidata n'envoient que des coordonnées de
+  lieux (données publiques). Aucun email, token ou identifiant utilisateur
+  ne quitte le serveur vers des tiers.
+- **Photos non persistées** : les `Stream` sont lus en mémoire, passés au
+  `StubPhotoAnalyzer` (qui ne lit pas le contenu), puis `DisposeAsync()` dans
+  le bloc `finally` du contrôleur. Rien n'est écrit en base ni sur disque.
+- **GPS = lieux, pas traces joueurs** : conforme CLAUDE.md §3 invariant 2.
+- **Authentification** : `[Authorize(Roles="creator,super_admin")]` — mode
+  joueur anonyme n'a pas accès.
+- **Rate limiting** : `generate-context` 10 req/h en prod — protège les APIs
+  externes d'un abus.
+- **Validation DTO** : `[Range]`, `[StringLength]`, `[Required]` sur tous les
+  champs entrants. Refus 400 si invalide.
+- **RequestSizeLimit** : 12 Mo max (5 photos × 2 Mo + overhead).
+- **Pas de secret ajouté** : les URLs Overpass/Wikidata sont des APIs publiques,
+  pas de clé API requise.
+
+---
+
 ## 2026-05-02 — Corrections résiduelles SQLite (PR #23 incomplète)
 
 **Branche** : `claude/fix-ci-build-failure-7KfN7`

@@ -121,3 +121,43 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       `docker-compose.yml` enrichi avec service `api` + healthcheck postgres,
       secrets passés via variables d'environnement (`JWT_SECRET`, `POSTGRES_PASSWORD`,
       `CORS_ORIGIN`), `server/.dockerignore`.
+
+## Phase 6 — Assistant de game design en réalité terrain
+
+> Architecture complète documentée dans `docs/GAME-DESIGN-ASSISTANT.md`.
+
+### Phase 6a — C1 ContextBuilder (🚧 en cours)
+
+- [x] **Documentation C1→C3** : `docs/GAME-DESIGN-ASSISTANT.md` — couches,
+      interfaces, endpoints, privacy/security review.
+- [x] **Domaine Assistant** : records `AudienceProfile`, `GpsPoint`,
+      `SponsorConstraint`, `LocationContext`, `PhotoAnalysisResult`, `HuntContext`
+      dans `Dodorassik.Core/Domain/Assistant/`.
+- [x] **Abstractions** : `IContextBuilderService`, `ILocationEnricher`,
+      `IPhotoAnalyzer` dans `Dodorassik.Core/Abstractions/`.
+- [x] **LocationEnricher** (Infrastructure) : appels OpenStreetMap Overpass API
+      + Wikidata SPARQL, timeouts courts, résultat vide si échec réseau.
+- [x] **StubPhotoAnalyzer** (Infrastructure) : placeholder jusqu'à C3 ; photos
+      lues en mémoire et immédiatement jetées, rien persisté.
+- [x] **ContextBuilderService** (Api) : orchestre LocationEnricher + PhotoAnalyzer
+      en parallèle.
+- [x] **HuntGenerationController** : `POST /api/hunts/generate/context`
+      (`[Authorize(Roles="creator,super_admin")]`), multipart/form-data,
+      rate limit 10 req/h.
+
+### Phase 6b — C2 Knowledge RAG
+
+- [ ] Peuplement base de mécaniques (~1 000 jeux : BoardGameGeek + curation manuelle)
+- [ ] `pgvector` sur PostgreSQL + migration EF Core
+- [ ] `IGameKnowledgeRepository` + implémentation EF
+- [ ] Embedding des requêtes (text-embedding-3-small ou équivalent)
+- [ ] Enrichissement de `HuntContextDto` avec `RagHit[]`
+
+### Phase 6c — C3 DesignGenerator (Claude API)
+
+- [ ] `Anthropic.SDK` + `SixLabors.ImageSharp`
+- [ ] `ClaudePhotoAnalyzer` remplaçant `StubPhotoAnalyzer` (vision multimodale)
+- [ ] `IDesignGeneratorService` + implémentation Claude — prompt chain 3 passes
+- [ ] `POST /api/hunts/generate/full` avec streaming SSE
+- [ ] Rate limit 5 req/h par créateur
+- [ ] Intégration Godot : écran `hunt_generator` déclenché depuis `creator_home`

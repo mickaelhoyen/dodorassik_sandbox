@@ -154,6 +154,25 @@ public class HuntGenerationController : ControllerBase
         GpsPoints: ctx.GpsPoints.Select(g => new GpsPointDto(g.Latitude, g.Longitude, g.Label)).ToList());
 }
 
+    /// <summary>
+    /// C3 — Génère une chasse complète (étapes, indices, narration) via l'API Claude.
+    /// Réservé aux abonnements Pro et Enterprise.
+    /// </summary>
+    [HttpPost("design")]
+    [EnableRateLimiting("generate-context")]
+    [Authorize(Policy = "RequiresPro")]
+    public IActionResult GenerateDesign([FromBody] MechanicsRequestDto dto)
+    {
+        // C3 sera implémenté lors de l'intégration de l'Anthropic SDK.
+        // Le DTO MechanicsRequestDto (HuntContext + Limit) est déjà suffisant
+        // pour composer le prompt ; les RagHits seront récupérés en interne.
+        return StatusCode(StatusCodes.Status501NotImplemented, new
+        {
+            error = "not_implemented",
+            message = "La génération IA (C3) est en cours de développement.",
+        });
+    }
+
 /// <summary>Modèle de formulaire multipart pour l'endpoint C1.</summary>
 public class BuildContextFormDto
 {

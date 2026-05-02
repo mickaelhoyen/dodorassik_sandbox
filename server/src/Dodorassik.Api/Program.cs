@@ -100,7 +100,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Pro et Enterprise ont accès à C3 (génération Claude).
+    // super_admin bypasse le filtre — il gère la plateforme.
+    options.AddPolicy("RequiresPro", policy =>
+        policy.RequireAssertion(ctx =>
+            ctx.User.HasClaim("tier", "pro") ||
+            ctx.User.HasClaim("tier", "enterprise") ||
+            ctx.User.HasClaim("role", "super_admin")));
+});
 
 // -----------------------------------------------------------------------
 // CORS — explicit allowlist per environment, never AllowAnyOrigin in prod

@@ -51,3 +51,16 @@ public enum HuntCategory
     /// <summary>Time-bounded event hunt (festival, seasonal edition…).</summary>
     Event = 1,
 }
+
+/// <summary>
+/// Niveau d'abonnement d'un créateur.
+/// Free : joueur + créateur sans accès à la couche C3 (Claude).
+/// Pro : accès illimité à la génération IA (C3).
+/// Enterprise : idem Pro, limites plus hautes, SLA dédié.
+/// </summary>
+public enum SubscriptionTier
+{
+    Free = 0,
+    Pro = 1,
+    Enterprise = 2,
+}

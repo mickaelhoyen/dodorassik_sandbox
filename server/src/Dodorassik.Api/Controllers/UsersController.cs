@@ -31,7 +31,7 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> Me()
     {
         var u = await CurrentUserAsync();
-        return u is null ? Unauthorized() : new UserDto(u.Id, u.Email, u.DisplayName, Auth.JwtTokenService.RoleToSnake(u.Role), u.FamilyId);
+        return u is null ? Unauthorized() : ToDto(u);
     }
 
     [HttpPatch]
@@ -51,7 +51,7 @@ public class UsersController : ControllerBase
             u.Email = newEmail;
         }
         await _db.SaveChangesAsync();
-        return new UserDto(u.Id, u.Email, u.DisplayName, Auth.JwtTokenService.RoleToSnake(u.Role), u.FamilyId);
+        return ToDto(u);
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public class UsersController : ControllerBase
         return Ok(new
         {
             exportedAtUtc = DateTime.UtcNow,
-            user = new { u.Id, u.Email, u.DisplayName, role = u.Role.ToString(), u.CreatedAtUtc, u.LastLoginUtc, u.FamilyId },
+            user = new { u.Id, u.Email, u.DisplayName, role = u.Role.ToString(), tier = u.Tier.ToString(), u.CreatedAtUtc, u.LastLoginUtc, u.FamilyId },
             huntsCreated,
             submissions,
         });
@@ -111,6 +111,9 @@ public class UsersController : ControllerBase
         _log.LogInformation("User erased (GDPR) {UserId}", u.Id);
         return NoContent();
     }
+
+    private static UserDto ToDto(User u) =>
+        new(u.Id, u.Email, u.DisplayName, Auth.JwtTokenService.RoleToSnake(u.Role), u.FamilyId, Auth.JwtTokenService.TierToSnake(u.Tier));
 
     private async Task<User?> CurrentUserAsync()
     {

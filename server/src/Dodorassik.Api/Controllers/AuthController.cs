@@ -90,7 +90,7 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse(_jwt.Issue(user), ToDto(user)));
     }
 
-    private static UserDto ToDto(User u) => new(u.Id, u.Email, u.DisplayName, JwtTokenService.RoleToSnake(u.Role), u.FamilyId);
+    private static UserDto ToDto(User u) => new(u.Id, u.Email, u.DisplayName, JwtTokenService.RoleToSnake(u.Role), u.FamilyId, JwtTokenService.TierToSnake(u.Tier));
 
     /// <summary>
     /// Hashes the email so it can appear in logs without being PII. The hash

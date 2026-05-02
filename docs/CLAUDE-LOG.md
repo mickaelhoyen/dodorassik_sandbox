@@ -13,6 +13,60 @@
 
 ---
 
+## 2026-05-02 — Abonnements : tiers Free / Pro / Enterprise
+
+**Branche** : `claude/location-game-assistant-KGJDw`
+
+### Requête utilisateur
+
+> "il faudrait pouvoir différencier au niveau des utilisateurs le type d'abonnement.
+> Il pourra y avoir plusieurs niveaux d'abonnements : free (pas d'accès à la couche
+> C3 / Claude), pro et entreprise. Le forfait free permettra d'être joueur ou même
+> créateur. On pourra envisager plus tard une possibilité de tester les fonctions pro
+> pour les abonnements free (exemple : génération d'un ou de deux jeux avec la couche C3)."
+
+### Analyse
+
+Trois niveaux distincts : Free (accès C1/C2, pas C3), Pro (C3 illimité), Enterprise (idem + SLA futur). Le super_admin bypass toujours les checks de tier — il gère la plateforme.
+
+Décisions clés :
+- **`SubscriptionTier` enum** dans `Enums.cs` plutôt qu'un type string libre : typage statique, évite les fautes de frappe, facilite les migrations futures.
+- **`AiGenerationsUsed` sur `User`** : compteur persistant pour le futur quota d'essai (2 générations offertes), ne requiert pas de table dédiée à ce stade.
+- **Claim JWT `tier`** : la politique ASP.NET Core `RequiresPro` lit le claim directement depuis le token sans requête DB. Les tokens existants n'ont pas le claim → ils échouent la policy (comportement attendu, les utilisateurs doivent se reconnecter).
+- **`[Authorize(Policy="RequiresPro")]`** sur `POST /api/hunts/generate/design` : combiné avec le `[Authorize(Roles="creator,super_admin")]` du controller parent → double filtre.
+- **Stub 501** sur l'endpoint design : pose la porte d'entrée et le filtre d'autorisation sans implémenter C3 ; les tests existants ne touchent pas cet endpoint.
+
+Alternatives rejetées :
+- Table `Subscription` séparée avec dates d'expiration : prématuré avant d'avoir un système de paiement.
+- Middleware global de vérification du tier : la politique ASP.NET Core est suffisante et plus standard.
+
+### Fichiers modifiés
+
+| Fichier | Nature |
+|---------|--------|
+| `Dodorassik.Core/Domain/Enums.cs` | Ajout enum `SubscriptionTier` |
+| `Dodorassik.Core/Domain/User.cs` | Ajout `Tier`, `AiGenerationsUsed` |
+| `Dodorassik.Api/Auth/JwtTokenService.cs` | Ajout claim `tier` + `TierToSnake()` |
+| `Dodorassik.Api/Dtos/AuthDtos.cs` | `UserDto` + champ `Tier` |
+| `Dodorassik.Api/Controllers/AuthController.cs` | `ToDto` mise à jour |
+| `Dodorassik.Api/Controllers/UsersController.cs` | `ToDto` + export RGPD |
+| `Dodorassik.Api/Program.cs` | Politique `RequiresPro` |
+| `Dodorassik.Api/Controllers/HuntGenerationController.cs` | Endpoint C3 stub |
+| `Migrations/20260502140000_AddSubscriptionTier.cs` | Nouvelle migration |
+| `Migrations/20260502140000_AddSubscriptionTier.Designer.cs` | Designer migration |
+| `Migrations/AppDbContextModelSnapshot.cs` | Snapshot mis à jour |
+| `docs/ROADMAP.md` | Phase 7 ajoutée |
+
+### Security & Privacy review
+
+- Pas de nouvelle PII : `Tier` est un entier (enum), `AiGenerationsUsed` est un compteur. Ni l'un ni l'autre n'identifie une personne.
+- Le claim `tier` dans le JWT est signé HMAC-SHA256 — non falsifiable sans la clé secrète.
+- L'endpoint C3 retourne 403 pour les Free (via la politique) avant même d'atteindre la logique métier.
+- Export RGPD mis à jour pour inclure `tier` (principe de portabilité complète).
+- `AiGenerationsUsed` est inclus dans la portée RGPD implicitement (champ utilisateur).
+
+---
+
 ## 2026-05-02 — Game Design Assistant C2 : Knowledge RAG + pgvector
 
 **Branche** : `claude/location-game-assistant-KGJDw`

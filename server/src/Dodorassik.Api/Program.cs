@@ -6,12 +6,14 @@ using Dodorassik.Api.Hubs;
 using Dodorassik.Api.Services;
 using Dodorassik.Core.Abstractions;
 using Dodorassik.Infrastructure.Assistant;
+using Dodorassik.Infrastructure.Persistence.Seed;
 using Dodorassik.Infrastructure.Persistence;
 using Dodorassik.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Database
 // -----------------------------------------------------------------------
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+    opt.UseNpgsql(
+        builder.Configuration.GetConnectionString("Postgres"),
+        o => o.UseVector()));
 
 // -----------------------------------------------------------------------
 // Auth — JWT bearer + PBKDF2 password hashing
@@ -53,6 +57,13 @@ builder.Services.AddHttpClient("wikidata", c =>
 builder.Services.AddScoped<ILocationEnricher, LocationEnricher>();
 builder.Services.AddScoped<IPhotoAnalyzer, StubPhotoAnalyzer>();
 builder.Services.AddScoped<IContextBuilderService, ContextBuilderService>();
+
+// -----------------------------------------------------------------------
+// Game Design Assistant — C2 Knowledge RAG
+// -----------------------------------------------------------------------
+builder.Services.AddScoped<ITextEmbedder, StubTextEmbedder>();
+builder.Services.AddScoped<IGameKnowledgeRepository, GameKnowledgeRepository>();
+builder.Services.AddScoped<GameMechanicsSeeder>();
 
 // Don't remap "sub" / "role" — we want the raw JWT claim names.
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;

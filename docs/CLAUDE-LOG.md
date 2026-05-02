@@ -13,6 +13,74 @@
 
 ---
 
+## 2026-05-02 — Game Design Assistant C2 : Knowledge RAG + pgvector
+
+**Branche** : `claude/location-game-assistant-KGJDw`
+
+### Requête utilisateur
+
+> "Démarres l'implémentation de C2"
+
+### Analyse
+
+C2 est la couche de recherche sémantique qui retrouve les mécaniques de jeux
+les plus pertinentes par rapport au contexte d'une chasse.
+
+Décisions clés :
+- **`float[]` pour les embeddings** plutôt que le type `Vector` de pgvector,
+  pour éviter la dépendance sur le namespace `Pgvector` dans Core. Le type
+  `vector(1536)` est déclaré comme `HasColumnType("vector(1536)")` dans EF.
+- **Fallback tag scoring** : quand l'embedder retourne null (StubTextEmbedder),
+  le repository score les fiches par chevauchement de mots-clés + adéquation
+  d'audience. C2 est donc fonctionnel dès maintenant sans clé API embedding.
+- **68 fiches curatées** embarquées comme ressource JSON dans l'assembly —
+  pas de dépendance réseau au démarrage, seed idempotent.
+- **Migration manuelle** : `dotnet` non disponible dans ce sandbox, migration
+  écrite à la main avec index HNSW via `migrationBuilder.Sql()` (EF Core ne
+  supporte pas nativement `vector_cosine_ops`).
+- **Endpoint `POST /api/hunts/generate/mechanics`** reprend le même rate limit
+  `generate-context` que C1 — partage le quota de 10 req/h.
+
+### Fichiers modifiés / créés
+
+| Fichier | Nature |
+|---------|--------|
+| `server/src/Dodorassik.Infrastructure/Dodorassik.Infrastructure.csproj` | Ajout `Pgvector.EntityFrameworkCore` 0.3.0 + EmbeddedResource JSON |
+| `server/src/Dodorassik.Api/Dodorassik.Api.csproj` | Ajout `Pgvector.EntityFrameworkCore` (pour `UseVector()` dans Program.cs) |
+| `Core/Domain/Assistant/GameMechanic.cs` | Nouveau — entité avec `float[]? Embedding` |
+| `Core/Domain/Assistant/RagHit.cs` | Nouveau — record résultat |
+| `Core/Abstractions/IGameKnowledgeRepository.cs` | Nouveau — interface |
+| `Core/Abstractions/ITextEmbedder.cs` | Nouveau — interface |
+| `Infrastructure/Assistant/GameKnowledgeRepository.cs` | Nouveau — pgvector + fallback tag |
+| `Infrastructure/Assistant/StubTextEmbedder.cs` | Nouveau — retourne null |
+| `Infrastructure/Persistence/Seed/game_mechanics.json` | Nouveau — 68 fiches curatées |
+| `Infrastructure/Persistence/Seed/GameMechanicsSeeder.cs` | Nouveau — seed idempotent |
+| `Infrastructure/Persistence/AppDbContext.cs` | Ajout GameMechanics DbSet + config pgvector |
+| `Infrastructure/Persistence/Migrations/20260502120000_AddGameMechanics.cs` | Nouveau — migration manuelle |
+| `Infrastructure/Persistence/Migrations/20260502120000_AddGameMechanics.Designer.cs` | Nouveau — snapshot migration |
+| `Infrastructure/Persistence/Migrations/AppDbContextModelSnapshot.cs` | Mise à jour — ajout GameMechanic |
+| `Api/Dtos/HuntGenerationDtos.cs` | Ajout `MechanicsRequestDto`, `RagHitDto` |
+| `Api/Services/HuntContextQueryComposer.cs` | Nouveau — compose le texte RAG |
+| `Api/Controllers/HuntGenerationController.cs` | Ajout endpoint `POST /mechanics` |
+| `Api/Program.cs` | `UseVector()`, services C2, using Pgvector |
+| `docs/ROADMAP.md` | Phase 6b mise à jour |
+
+### Security & Privacy review
+
+- **Pas de PII** : `GameMechanic` ne contient que des données de conception
+  de jeux — aucune donnée utilisateur.
+- **Seed data** : uniquement des données de jeux publics (BoardGameGeek,
+  concepts pédagogiques). Aucun User, Family ni StepSubmission dans le seed —
+  conforme CLAUDE.md §4.
+- **Endpoint protégé** : `[Authorize(Roles="creator,super_admin")]` hérité
+  du contrôleur.
+- **Pas de secrets** : `StubTextEmbedder` ne nécessite aucune clé API.
+  Quand un vrai embedder sera connecté, la clé passera par user-secrets / env.
+- **Embeddings null par défaut** : la colonne `vector(1536)` est nullable —
+  la table est exploitable (fallback tags) sans avoir exécuté l'embedder.
+
+---
+
 ## 2026-05-02 — Game Design Assistant C1 : documentation + implémentation ContextBuilder
 
 **Branche** : `claude/location-game-assistant-KGJDw`

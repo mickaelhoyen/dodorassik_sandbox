@@ -145,13 +145,27 @@ Liste vivante. À découper en issues GitHub au fil de l'eau.
       (`[Authorize(Roles="creator,super_admin")]`), multipart/form-data,
       rate limit 10 req/h.
 
-### Phase 6b — C2 Knowledge RAG
+### Phase 6b — C2 Knowledge RAG (🚧 en cours)
 
-- [ ] Peuplement base de mécaniques (~1 000 jeux : BoardGameGeek + curation manuelle)
-- [ ] `pgvector` sur PostgreSQL + migration EF Core
-- [ ] `IGameKnowledgeRepository` + implémentation EF
-- [ ] Embedding des requêtes (text-embedding-3-small ou équivalent)
-- [ ] Enrichissement de `HuntContextDto` avec `RagHit[]`
+- [x] `pgvector` sur PostgreSQL : `Pgvector.EntityFrameworkCore` 0.3.0,
+      `UseVector()` sur `UseNpgsql`, `HasPostgresExtension("vector")`,
+      migration `20260502120000_AddGameMechanics`.
+- [x] Entité `GameMechanic` avec colonne `vector(1536)` (embedding null par défaut),
+      index HNSW `vector_cosine_ops` créé via SQL raw dans la migration.
+- [x] `IGameKnowledgeRepository` + `GameKnowledgeRepository` :
+      cosine similarity pgvector si embedding disponible,
+      sinon scoring par chevauchement de tags + adéquation audience (fallback).
+- [x] `ITextEmbedder` + `StubTextEmbedder` (active le fallback tag scoring).
+- [x] Seed data JSON embarquée : 68 fiches jeux curatées
+      (boardgame, videogame, escape, geocaching, larp, outdoor).
+- [x] `GameMechanicsSeeder` : idempotent, lit le JSON embarqué dans l'assembly,
+      enregistré comme service Scoped.
+- [x] `POST /api/hunts/generate/mechanics` (`[Authorize]`, rate limit partagé) :
+      prend un `HuntContextDto`, compose le texte RAG via `HuntContextQueryComposer`,
+      retourne `RagHitDto[]`.
+- [ ] Génération des embeddings pour les 68 fiches (script offline, nécessite
+      une clé OpenAI ou alternative — à faire lors de la mise en prod)
+- [ ] Peuplement étendu : BoardGameGeek API (~500 jeux supplémentaires)
 
 ### Phase 6c — C3 DesignGenerator (Claude API)
 

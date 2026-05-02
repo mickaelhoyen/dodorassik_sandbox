@@ -1,0 +1,682 @@
+[
+  {
+    "title": "Coopération sous contrainte temporelle",
+    "sourceGame": "Pandemic",
+    "mechanics": ["cooperation", "time_pressure", "role_specialization", "resource_management"],
+    "themes": ["medical", "global", "crisis"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 45,
+    "playerCountMin": 2, "playerCountMax": 4,
+    "format": "boardgame"
+  },
+  {
+    "title": "Déduction et collecte d'indices",
+    "sourceGame": "Cluedo",
+    "mechanics": ["deduction", "elimination", "investigation", "bluffing"],
+    "themes": ["detective", "mystery", "indoor", "murder"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 3, "playerCountMax": 6,
+    "format": "boardgame"
+  },
+  {
+    "title": "Construction de réseau et collection",
+    "sourceGame": "Ticket to Ride",
+    "mechanics": ["collection", "route_building", "area_control", "drafting"],
+    "themes": ["travel", "geography", "trains", "adventure"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 5,
+    "format": "boardgame"
+  },
+  {
+    "title": "Placement de tuiles et revendication de territoire",
+    "sourceGame": "Carcassonne",
+    "mechanics": ["tile_placement", "area_control", "scoring"],
+    "themes": ["medieval", "countryside", "construction", "french_history"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 45,
+    "playerCountMin": 2, "playerCountMax": 5,
+    "format": "boardgame"
+  },
+  {
+    "title": "Draft et construction de civilisation",
+    "sourceGame": "7 Wonders",
+    "mechanics": ["drafting", "engine_building", "resource_management"],
+    "themes": ["ancient", "civilization", "architecture", "history"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 2, "playerCountMax": 7,
+    "format": "boardgame"
+  },
+  {
+    "title": "Communication par indices visuels",
+    "sourceGame": "Codenames",
+    "mechanics": ["word_association", "communication", "teamwork", "deduction"],
+    "themes": ["spy", "language", "urban"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 20,
+    "playerCountMin": 2, "playerCountMax": 8,
+    "format": "boardgame"
+  },
+  {
+    "title": "Narration et interprétation d'images",
+    "sourceGame": "Dixit",
+    "mechanics": ["storytelling", "imagination", "voting", "communication"],
+    "themes": ["dream", "art", "fairy_tale", "fantasy"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 3, "playerCountMax": 6,
+    "format": "boardgame"
+  },
+  {
+    "title": "Observation rapide et réflexes",
+    "sourceGame": "Dobble",
+    "mechanics": ["observation", "speed", "pattern_recognition"],
+    "themes": ["shapes", "animals", "reflexes", "family"],
+    "ageMin": 5, "ageMax": null,
+    "durationMinutes": 15,
+    "playerCountMin": 2, "playerCountMax": 8,
+    "format": "boardgame"
+  },
+  {
+    "title": "Vitesse et dextérité manuelle",
+    "sourceGame": "Jungle Speed",
+    "mechanics": ["speed", "observation", "dexterity", "reflex"],
+    "themes": ["nature", "competition", "animals"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 20,
+    "playerCountMin": 2, "playerCountMax": 8,
+    "format": "boardgame"
+  },
+  {
+    "title": "Rôle caché et déduction sociale",
+    "sourceGame": "The Resistance: Avalon",
+    "mechanics": ["hidden_role", "deduction", "social_deduction", "bluffing"],
+    "themes": ["medieval", "spy", "fantasy", "legend"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 5, "playerCountMax": 10,
+    "format": "boardgame"
+  },
+  {
+    "title": "Rôle caché dans un équipage",
+    "sourceGame": "Saboteur",
+    "mechanics": ["hidden_role", "bluffing", "cooperation", "tunnel_building"],
+    "themes": ["mining", "fantasy", "dwarves", "sabotage"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 3, "playerCountMax": 10,
+    "format": "boardgame"
+  },
+  {
+    "title": "Coopération et gestion des ressources naturelles",
+    "sourceGame": "Wingspan",
+    "mechanics": ["collection", "engine_building", "drafting", "observation"],
+    "themes": ["nature", "birds", "science", "ecology"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 70,
+    "playerCountMin": 1, "playerCountMax": 5,
+    "format": "boardgame"
+  },
+  {
+    "title": "Communication non verbale et devinettes",
+    "sourceGame": "Concept",
+    "mechanics": ["communication", "deduction", "visual_clues", "teamwork"],
+    "themes": ["language", "culture", "art"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 40,
+    "playerCountMin": 4, "playerCountMax": 12,
+    "format": "boardgame"
+  },
+  {
+    "title": "Communication fantôme et visions",
+    "sourceGame": "Mysterium",
+    "mechanics": ["cooperation", "communication", "deduction", "interpretation"],
+    "themes": ["ghost", "mystery", "art", "supernatural"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 7,
+    "format": "boardgame"
+  },
+  {
+    "title": "Investigation dans une ville victorienne",
+    "sourceGame": "Sherlock Holmes Detective Conseil",
+    "mechanics": ["investigation", "deduction", "exploration", "narrative"],
+    "themes": ["detective", "historical", "london", "mystery", "victorian"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 8,
+    "format": "boardgame"
+  },
+  {
+    "title": "Escape room coopératif avec mécanismes physiques",
+    "sourceGame": "Escape Room: The Game",
+    "mechanics": ["cooperation", "puzzle", "time_pressure", "code_breaking"],
+    "themes": ["escape", "mystery", "thriller"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 5,
+    "format": "escape"
+  },
+  {
+    "title": "Énigmes avec mécaniques de verrous et de clés",
+    "sourceGame": "Unlock!",
+    "mechanics": ["cooperation", "puzzle", "code_breaking", "time_pressure", "observation"],
+    "themes": ["escape", "mystery", "adventure", "history"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 6,
+    "format": "escape"
+  },
+  {
+    "title": "Mémorisation et acting par catégories",
+    "sourceGame": "Time's Up!",
+    "mechanics": ["memory", "acting", "guessing", "teamwork"],
+    "themes": ["celebrity", "party", "entertainment"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 4, "playerCountMax": 12,
+    "format": "boardgame"
+  },
+  {
+    "title": "Jardinage japonais et placement de tuiles",
+    "sourceGame": "Takenoko",
+    "mechanics": ["tile_placement", "collection", "area_control", "engine_building"],
+    "themes": ["nature", "japan", "garden", "animals"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 45,
+    "playerCountMin": 2, "playerCountMax": 4,
+    "format": "boardgame"
+  },
+  {
+    "title": "Bluff et probabilités",
+    "sourceGame": "Perudo",
+    "mechanics": ["bluffing", "probability", "deduction", "risk_taking"],
+    "themes": ["pirates", "adventure", "gambling"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 2, "playerCountMax": 6,
+    "format": "boardgame"
+  },
+  {
+    "title": "Exploration GPS et collection de créatures",
+    "sourceGame": "Pokémon GO",
+    "mechanics": ["exploration", "collection", "gps_navigation", "discovery"],
+    "themes": ["nature", "technology", "outdoor", "animals", "adventure"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": null,
+    "format": "videogame"
+  },
+  {
+    "title": "Navigation GPS et découverte de caches",
+    "sourceGame": "Géocaching",
+    "mechanics": ["gps_navigation", "discovery", "puzzle", "observation"],
+    "themes": ["outdoor", "nature", "treasure", "mystery"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": null,
+    "format": "geocaching"
+  },
+  {
+    "title": "Contrôle de territoire par portails GPS",
+    "sourceGame": "Ingress",
+    "mechanics": ["territory_control", "gps_navigation", "cooperation", "strategy"],
+    "themes": ["sci_fi", "urban", "outdoor", "technology"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 1, "playerCountMax": null,
+    "format": "videogame"
+  },
+  {
+    "title": "Exploration et énigmes dans un monde ouvert",
+    "sourceGame": "The Legend of Zelda: Breath of the Wild",
+    "mechanics": ["exploration", "puzzle", "observation", "collection", "discovery"],
+    "themes": ["fantasy", "adventure", "nature", "ruins", "outdoor"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 1,
+    "format": "videogame"
+  },
+  {
+    "title": "Énigmes environnementales dans un monde isolé",
+    "sourceGame": "Myst",
+    "mechanics": ["puzzle", "exploration", "observation", "deduction"],
+    "themes": ["mystery", "isolation", "architecture", "nature"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 1,
+    "format": "videogame"
+  },
+  {
+    "title": "Énigmes d'observation dans la nature",
+    "sourceGame": "The Witness",
+    "mechanics": ["observation", "puzzle", "pattern_recognition", "deduction"],
+    "themes": ["nature", "mystery", "island", "architecture"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 1,
+    "format": "videogame"
+  },
+  {
+    "title": "Investigation narrative par fragments vidéo",
+    "sourceGame": "Her Story",
+    "mechanics": ["investigation", "deduction", "narrative", "keyword_search"],
+    "themes": ["detective", "narrative", "mystery", "crime"],
+    "ageMin": 14, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 1, "playerCountMax": 1,
+    "format": "videogame"
+  },
+  {
+    "title": "Exploration spatiale et découverte de secrets",
+    "sourceGame": "Outer Wilds",
+    "mechanics": ["exploration", "discovery", "observation", "puzzle"],
+    "themes": ["space", "mystery", "nature", "ancient_civilization"],
+    "ageMin": 12, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 1,
+    "format": "videogame"
+  },
+  {
+    "title": "Rôles cachés dans un équipage spatial",
+    "sourceGame": "Among Us",
+    "mechanics": ["hidden_role", "deduction", "social_deduction", "cooperation"],
+    "themes": ["space", "cooperation", "mystery", "sabotage"],
+    "ageMin": 9, "ageMax": null,
+    "durationMinutes": 20,
+    "playerCountMin": 4, "playerCountMax": 15,
+    "format": "videogame"
+  },
+  {
+    "title": "Chasse au trésor avec navigation et énigmes",
+    "sourceGame": "Chasse au trésor classique",
+    "mechanics": ["navigation", "puzzle", "collection", "teamwork", "discovery"],
+    "themes": ["outdoor", "adventure", "treasure", "nature"],
+    "ageMin": 5, "ageMax": 12,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Parcours muséal et observation d'œuvres",
+    "sourceGame": "Jeu de piste muséal",
+    "mechanics": ["observation", "deduction", "knowledge", "navigation"],
+    "themes": ["history", "art", "indoor", "culture", "architecture"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 75,
+    "playerCountMin": 2, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Aventure nocturne coopérative",
+    "sourceGame": "Jeu de nuit en forêt",
+    "mechanics": ["navigation", "cooperation", "observation", "courage"],
+    "themes": ["night", "forest", "outdoor", "mystery", "nature"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 3, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Quiz nature et observation scientifique",
+    "sourceGame": "Sentier nature éducatif",
+    "mechanics": ["observation", "knowledge", "quiz", "collection"],
+    "themes": ["nature", "science", "ecology", "outdoor", "education"],
+    "ageMin": 6, "ageMax": 12,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Exploration urbaine et photographie",
+    "sourceGame": "Jeu de piste urbain",
+    "mechanics": ["navigation", "photography", "discovery", "observation"],
+    "themes": ["urban", "photography", "architecture", "history"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Circuit historique avec anecdotes et défis",
+    "sourceGame": "Visite historique ludique",
+    "mechanics": ["navigation", "knowledge", "observation", "storytelling"],
+    "themes": ["history", "urban", "architecture", "culture"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 40,
+    "format": "outdoor"
+  },
+  {
+    "title": "Jeu de rôle médiéval en plein air",
+    "sourceGame": "LARP médiéval",
+    "mechanics": ["roleplay", "exploration", "narrative", "cooperation", "combat_lite"],
+    "themes": ["medieval", "fantasy", "outdoor", "castle", "adventure"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 5, "playerCountMax": 50,
+    "format": "larp"
+  },
+  {
+    "title": "Jeu de rôle enquête policière en ville",
+    "sourceGame": "LARP enquête",
+    "mechanics": ["roleplay", "investigation", "deduction", "narrative", "social"],
+    "themes": ["detective", "urban", "mystery", "crime", "historical"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 4, "playerCountMax": 30,
+    "format": "larp"
+  },
+  {
+    "title": "Escape room en plein air avec serrures et cadenas",
+    "sourceGame": "Escape park",
+    "mechanics": ["cooperation", "puzzle", "code_breaking", "time_pressure", "observation"],
+    "themes": ["outdoor", "escape", "adventure", "nature"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 8,
+    "format": "escape"
+  },
+  {
+    "title": "Rally photo avec challenges créatifs",
+    "sourceGame": "Rally photo",
+    "mechanics": ["photography", "creativity", "teamwork", "collection", "time_pressure"],
+    "themes": ["urban", "photography", "nature", "art"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Course d'orientation avec points de contrôle",
+    "sourceGame": "Course d'orientation",
+    "mechanics": ["navigation", "gps_navigation", "speed", "collection"],
+    "themes": ["outdoor", "nature", "forest", "sport", "adventure"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Enquête archéologique et découverte d'artefacts",
+    "sourceGame": "Jeu archéologique",
+    "mechanics": ["observation", "collection", "deduction", "knowledge", "discovery"],
+    "themes": ["history", "archaeology", "ancient", "outdoor", "science"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Décryptage de codes et messages secrets",
+    "sourceGame": "Jeu d'espionnage",
+    "mechanics": ["code_breaking", "deduction", "observation", "puzzle"],
+    "themes": ["spy", "mystery", "urban", "adventure"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 10,
+    "format": "outdoor"
+  },
+  {
+    "title": "Survie et identification de plantes",
+    "sourceGame": "Jeu de survie nature",
+    "mechanics": ["observation", "knowledge", "collection", "cooperation"],
+    "themes": ["nature", "ecology", "survival", "forest", "outdoor"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Jeu de piste sonore avec indices audio",
+    "sourceGame": "Parcours audio-guidé",
+    "mechanics": ["navigation", "observation", "listening", "discovery"],
+    "themes": ["urban", "history", "nature", "mystery"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Chasse aux œufs et collecte de récompenses",
+    "sourceGame": "Chasse aux œufs de Pâques",
+    "mechanics": ["collection", "observation", "navigation", "discovery"],
+    "themes": ["seasonal", "outdoor", "family", "nature", "garden"],
+    "ageMin": 3, "ageMax": 10,
+    "durationMinutes": 30,
+    "playerCountMin": 1, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Jeu de piste aquatique et littoral",
+    "sourceGame": "Parcours littoral",
+    "mechanics": ["navigation", "observation", "knowledge", "collection"],
+    "themes": ["coastal", "nature", "science", "outdoor", "water"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 75,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Astronome amateur et observation du ciel",
+    "sourceGame": "Rallye astronomique",
+    "mechanics": ["observation", "knowledge", "navigation", "discovery"],
+    "themes": ["science", "night", "outdoor", "space", "nature"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Défi sportif par équipes avec classement",
+    "sourceGame": "Olympiades",
+    "mechanics": ["teamwork", "competition", "physical_challenge", "scoring"],
+    "themes": ["sport", "outdoor", "competition", "family"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 4, "playerCountMax": 60,
+    "format": "outdoor"
+  },
+  {
+    "title": "Construction collective avec contraintes",
+    "sourceGame": "Défi de construction",
+    "mechanics": ["cooperation", "creativity", "dexterity", "time_pressure"],
+    "themes": ["science", "engineering", "teamwork", "indoor"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 30,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Défis artistiques et créatifs en extérieur",
+    "sourceGame": "Land art",
+    "mechanics": ["creativity", "observation", "cooperation", "collection"],
+    "themes": ["art", "nature", "outdoor", "creativity"],
+    "ageMin": 5, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Reconnaissance de faune et flore locales",
+    "sourceGame": "Bingo nature",
+    "mechanics": ["observation", "collection", "knowledge", "bingo"],
+    "themes": ["nature", "ecology", "forest", "outdoor", "animals"],
+    "ageMin": 5, "ageMax": 12,
+    "durationMinutes": 45,
+    "playerCountMin": 1, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Secrets d'une ville médiévale",
+    "sourceGame": "Parcours médiéval",
+    "mechanics": ["navigation", "observation", "knowledge", "storytelling"],
+    "themes": ["medieval", "history", "urban", "castle", "architecture"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Légendaire celtique et nature mystérieuse",
+    "sourceGame": "Parcours légendaire",
+    "mechanics": ["storytelling", "navigation", "observation", "roleplay"],
+    "themes": ["celtic", "legend", "nature", "forest", "mystery", "fantasy"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 75,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Visite industrielle et patrimoine technique",
+    "sourceGame": "Jeu de piste industriel",
+    "mechanics": ["observation", "knowledge", "navigation", "discovery"],
+    "themes": ["industrial", "history", "architecture", "urban", "science"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 75,
+    "playerCountMin": 2, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Mission secrète et communication codée",
+    "sourceGame": "Mission espion en plein air",
+    "mechanics": ["roleplay", "code_breaking", "navigation", "cooperation", "time_pressure"],
+    "themes": ["spy", "urban", "adventure", "mystery"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Lecture de carte et topographie",
+    "sourceGame": "Randonnée orientée",
+    "mechanics": ["navigation", "map_reading", "discovery", "observation"],
+    "themes": ["nature", "outdoor", "mountain", "forest", "sport"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 1, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Contes et théâtre de rue en plein air",
+    "sourceGame": "Théâtre de rue immersif",
+    "mechanics": ["storytelling", "roleplay", "acting", "navigation"],
+    "themes": ["fairy_tale", "urban", "art", "history", "fantasy"],
+    "ageMin": 5, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 50,
+    "format": "larp"
+  },
+  {
+    "title": "Enquête sur une disparition mystérieuse",
+    "sourceGame": "Scénario enquête plein air",
+    "mechanics": ["investigation", "deduction", "roleplay", "observation", "narrative"],
+    "themes": ["mystery", "outdoor", "detective", "adventure"],
+    "ageMin": 9, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 3, "playerCountMax": 20,
+    "format": "larp"
+  },
+  {
+    "title": "Chasse au trésor pirate avec carte au trésor",
+    "sourceGame": "Aventure pirate",
+    "mechanics": ["navigation", "map_reading", "collection", "puzzle", "storytelling"],
+    "themes": ["pirates", "adventure", "coastal", "outdoor", "fantasy"],
+    "ageMin": 5, "ageMax": 12,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Rallye patrimonial avec QR codes",
+    "sourceGame": "Rallye QR code",
+    "mechanics": ["navigation", "knowledge", "observation", "discovery", "quiz"],
+    "themes": ["history", "architecture", "urban", "culture"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Jeu de rôle dans une ferme pédagogique",
+    "sourceGame": "Aventure à la ferme",
+    "mechanics": ["roleplay", "observation", "collection", "knowledge"],
+    "themes": ["farm", "nature", "animals", "rural", "education"],
+    "ageMin": 4, "ageMax": 10,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 30,
+    "format": "outdoor"
+  },
+  {
+    "title": "Navigation en canoë et découverte fluviale",
+    "sourceGame": "Parcours fluvial",
+    "mechanics": ["navigation", "cooperation", "observation", "discovery"],
+    "themes": ["water", "nature", "outdoor", "adventure", "ecology"],
+    "ageMin": 8, "ageMax": null,
+    "durationMinutes": 120,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Géologie et minéraux en terrain naturel",
+    "sourceGame": "Parcours géologique",
+    "mechanics": ["observation", "collection", "knowledge", "discovery"],
+    "themes": ["science", "nature", "geology", "outdoor", "mountain"],
+    "ageMin": 7, "ageMax": null,
+    "durationMinutes": 90,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Escape room dans un château ou manoir",
+    "sourceGame": "Escape château",
+    "mechanics": ["cooperation", "puzzle", "code_breaking", "observation", "time_pressure"],
+    "themes": ["medieval", "castle", "mystery", "history", "escape"],
+    "ageMin": 10, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 2, "playerCountMax": 8,
+    "format": "escape"
+  },
+  {
+    "title": "Jeu de piste sonore et musical",
+    "sourceGame": "Rallye musical",
+    "mechanics": ["listening", "observation", "knowledge", "collection"],
+    "themes": ["music", "art", "urban", "culture"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 45,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Inventaire naturaliste et dessin scientifique",
+    "sourceGame": "Carnet naturaliste",
+    "mechanics": ["observation", "creativity", "knowledge", "collection"],
+    "themes": ["nature", "science", "art", "ecology", "outdoor"],
+    "ageMin": 6, "ageMax": null,
+    "durationMinutes": 60,
+    "playerCountMin": 1, "playerCountMax": 15,
+    "format": "outdoor"
+  },
+  {
+    "title": "Puzzle géant en extérieur avec pièces cachées",
+    "sourceGame": "Puzzle outdoor",
+    "mechanics": ["collection", "puzzle", "cooperation", "navigation"],
+    "themes": ["outdoor", "adventure", "family"],
+    "ageMin": 5, "ageMax": 12,
+    "durationMinutes": 45,
+    "playerCountMin": 2, "playerCountMax": 20,
+    "format": "outdoor"
+  },
+  {
+    "title": "Jeu de rôle fantastique dans la nature",
+    "sourceGame": "Aventure fantastique outdoor",
+    "mechanics": ["roleplay", "storytelling", "exploration", "cooperation", "puzzle"],
+    "themes": ["fantasy", "nature", "forest", "outdoor", "adventure", "magic"],
+    "ageMin": 6, "ageMax": 14,
+    "durationMinutes": 90,
+    "playerCountMin": 3, "playerCountMax": 20,
+    "format": "larp"
+  }
+]

@@ -24,6 +24,26 @@ public record SponsorConstraintDto(
     [Required, StringLength(128, MinimumLength = 1)] string Category,
     IReadOnlyList<string> Constraints);
 
+// ─── C2 Request ────────────────────────────────────────────────────────────
+
+public record MechanicsRequestDto(
+    [Required] HuntContextDto Context,
+    [Range(1, 20)] int Limit = 8);
+
+// ─── C2 Response ───────────────────────────────────────────────────────────
+
+public record RagHitDto(
+    int Id,
+    string Title,
+    string SourceGame,
+    IReadOnlyList<string> Mechanics,
+    IReadOnlyList<string> Themes,
+    int AgeMin,
+    int? AgeMax,
+    int? DurationMinutes,
+    string Format,
+    float Score);
+
 // ─── Response DTOs ─────────────────────────────────────────────────────────
 
 public record NearbyPoiDto(string Name, string Type, double DistanceMeters);

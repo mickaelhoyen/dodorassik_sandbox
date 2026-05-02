@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Dodorassik.Api.Dtos;
+using Dodorassik.Api.Services;
 using Dodorassik.Api.Validation;
 using Dodorassik.Core.Abstractions;
 using Dodorassik.Core.Domain.Assistant;
@@ -114,6 +115,29 @@ public class HuntGenerationController : ControllerBase
         }
 
         return Ok(MapToDto(context!));
+    }
+
+    /// <summary>
+    /// C2 — Recherche les mécaniques de jeux les plus adaptées au contexte.
+    /// Utilise pgvector (cosine similarity) si l'embedder est configuré,
+    /// sinon scoring par chevauchement de tags.
+    /// </summary>
+    [HttpPost("mechanics")]
+    [EnableRateLimiting("generate-context")]
+    public async Task<ActionResult<IReadOnlyList<RagHitDto>>> FindMechanics(
+        [FromBody] MechanicsRequestDto dto,
+        [FromServices] IGameKnowledgeRepository repository,
+        CancellationToken ct)
+    {
+        var (queryText, audience) = HuntContextQueryComposer.Compose(dto.Context);
+
+        var hits = await repository.FindSimilarAsync(queryText, audience, dto.Limit, ct);
+
+        return Ok(hits.Select(h => new RagHitDto(
+            h.Id, h.Title, h.SourceGame,
+            h.Mechanics, h.Themes,
+            h.AgeMin, h.AgeMax, h.DurationMinutes,
+            h.Format, h.Score)).ToList());
     }
 
     private static HuntContextDto MapToDto(HuntContext ctx) => new(

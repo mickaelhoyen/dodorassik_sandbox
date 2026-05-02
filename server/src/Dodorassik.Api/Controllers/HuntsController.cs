@@ -217,8 +217,15 @@ public class HuntsController : ControllerBase
                     continue;
                 }
             }
-            hunt.Steps.Add(new HuntStep
+            // Use _db.HuntSteps.Add (not hunt.Steps.Add) so the entity is
+            // unambiguously tracked as Added. Adding via the navigation
+            // collection lets EF Core's relationship fixup decide the state
+            // from the (already non-empty) Id, which under relational
+            // providers ends up as Modified → UPDATE on a non-existent row
+            // → DbUpdateConcurrencyException at SaveChanges.
+            _db.HuntSteps.Add(new HuntStep
             {
+                HuntId = hunt.Id,
                 Order = order++,
                 Title = sr.Title,
                 Description = sr.Description ?? string.Empty,
@@ -260,8 +267,10 @@ public class HuntsController : ControllerBase
                     continue;
                 }
             }
-            hunt.Clues.Add(new Clue
+            // See note on HuntStep.Add above — same rationale.
+            _db.Clues.Add(new Clue
             {
+                HuntId = hunt.Id,
                 Code = normalized,
                 Title = cr.Title?.Trim() ?? string.Empty,
                 Reveal = cr.Reveal?.Trim() ?? string.Empty,

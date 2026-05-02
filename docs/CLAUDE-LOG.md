@@ -13,6 +13,68 @@
 
 ---
 
+## 2026-05-02 — Corrections résiduelles SQLite (PR #23 incomplète)
+
+**Branche** : `claude/fix-ci-build-failure-7KfN7`
+**Commit** : (en cours)
+
+### Requête utilisateur
+
+> Continue.
+
+### Analyse
+
+Après merge de PR #23 (guard `IsNpgsql()` + PRAGMA foreign_keys), la CI était
+toujours rouge. Exécution locale (après installation tardive du SDK .NET 8) :
+**7 tests échouaient sur 45**. Deux causes racines distinctes :
+
+**1. `PublicController.ListPublicHunts` — ORDER BY non traduit en SQLite**
+
+Le `OrderByDescending(h => h.EventEndUtc)` était appelé **après** un
+`.Select(h => new PublicHuntDto(...))`. Avec Npgsql cette projection-puis-tri
+est traduite. Avec SQLite, EF Core 8 lève `InvalidOperationException : The
+LINQ expression ... could not be translated` → 500 sur tous les tests
+`PublicApiTests.*` (5 tests) et `Full_happy_path_creator_submits_admin_approves`
+qui consomme aussi `/api/public/hunts`.
+
+Correctif : déplacer `OrderByDescending` **avant** `.Select(...)` pour que le
+tri porte sur l'entité `Hunt`, ce que les deux providers savent traduire.
+
+**2. `HuntsController.Update` — nouveau HuntStep/Clue traité comme UPDATE**
+
+Le contrôleur faisait `hunt.Steps.Add(new HuntStep { ... })`. Comme `HuntStep`
+initialise `Id = Guid.NewGuid()` dans son constructeur, EF Core (sous SQLite,
+provider relationnel) considérait l'entité comme déjà existante (clé non
+défaut) et émettait un `UPDATE` au lieu d'un `INSERT`. L'UPDATE ne trouvait
+aucune ligne → `DbUpdateConcurrencyException : expected 1 row(s), but
+actually affected 0`. Le test `Update_replaces_steps_and_removes_orphans`
+échouait en 500.
+
+Correctif : utiliser explicitement `_db.HuntSteps.Add(...)` (idem
+`_db.Clues.Add(...)`) qui marque l'entité Added sans ambiguïté. Le bug
+existait aussi avec InMemory mais ne se manifestait pas car InMemory ne
+distingue pas Add vs Update au niveau du store.
+
+### Vérification
+
+Exécution locale `dotnet test --no-build -c Release` : **45/45 passés**.
+
+### Modifications
+
+| Fichier | Nature |
+|---|---|
+| `server/src/Dodorassik.Api/Controllers/PublicController.cs` | OrderByDescending appliqué avant la projection |
+| `server/src/Dodorassik.Api/Controllers/HuntsController.cs` | `_db.HuntSteps.Add` / `_db.Clues.Add` au lieu d'add via navigation pour les nouvelles entités dans `Update` |
+
+### Security & Privacy review
+
+Refactorings d'ordre EF Core / providers seulement. Aucun nouveau endpoint,
+aucun nouveau champ, aucun changement d'autorisation, pas de nouvelle PII
+ni log. Le comportement fonctionnel est identique côté Postgres (qui acceptait
+déjà les deux formes). Les invariants `CLAUDE.md` §2 et §3 restent satisfaits.
+
+---
+
 ## 2026-05-01 — Correctifs régressions SQLite in-memory (PR #22)
 
 **Branche** : `claude/investigate-sqlite-test-failures-rcuSY`

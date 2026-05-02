@@ -28,8 +28,12 @@ public class PublicController : ControllerBase
     {
         var now = DateTime.UtcNow;
 
+        // OrderBy must be applied to the entity (Hunts) before projecting to
+        // PublicHuntDto, otherwise SQLite's EF provider cannot translate the
+        // expression (only Npgsql tolerates ORDER BY on a projected member).
         var rows = await _db.Hunts
             .Where(h => h.Status == HuntStatus.Published)
+            .OrderByDescending(h => h.EventEndUtc)
             .Select(h => new PublicHuntDto(
                 h.Id,
                 h.Name,
@@ -39,7 +43,6 @@ public class PublicController : ControllerBase
                 h.Category,
                 h.EventStartUtc,
                 h.EventEndUtc))
-            .OrderByDescending(h => h.EventEndUtc)
             .ToListAsync();
 
         var permanent = rows
